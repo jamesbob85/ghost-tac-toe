@@ -124,7 +124,7 @@ tictac/
 ### EAS Configuration
 - **Project ID**: 005595bc-73ad-48c6-a977-cc8f874b1e98
 - **Expo Account**: jamesbob85
-- **Android Package**: com.ghosttactoe.app
+- **Android Package**: dev.playhunter.ghosttactoe
 
 ### Build Profiles (eas.json)
 - `development`: Dev client, internal distribution
