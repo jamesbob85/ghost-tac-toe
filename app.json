@@ -1,30 +1,50 @@
 {
   "expo": {
-    "name": "ghost-tac-toe",
+    "name": "Ghost Tac Toe",
     "slug": "ghost-tac-toe",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0f0f23"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ghosttactoe.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0f0f23"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "package": "com.ghosttactoe.app",
+      "versionCode": 1,
+      "permissions": [],
+      "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "bundler": "metro"
+    },
+    "scheme": "ghost-tac-toe",
+    "plugins": [
+      "expo-router"
+    ],
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "005595bc-73ad-48c6-a977-cc8f874b1e98"
+      }
+    },
+    "owner": "jamesbob85"
   }
 }
