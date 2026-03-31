@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MarkEntry, Player } from '../../types/game';
-import { COLORS, FONT_SIZES, RADIUS, SPACING } from '../../constants/theme';
+import { useTranslation } from 'react-i18next';
+import { COLORS, FONT_SIZES, RADIUS, SPACING, glowShadow } from '../../constants/theme';
 import { MAX_MARKS } from '../../constants/gameConfig';
 
 interface GhostQueueProps {
@@ -10,22 +11,22 @@ interface GhostQueueProps {
   isVisible: boolean;
 }
 
-const AGE_OPACITIES = [0.35, 0.65, 1.0]; // oldest → newest
+const AGE_OPACITIES = [0.35, 0.65, 1.0];
 const ROW_COL_LABELS = ['A1','B1','C1','A2','B2','C2','A3','B3','C3'];
 
 export function GhostQueue({ player, marks, isVisible }: GhostQueueProps) {
+  const { t } = useTranslation();
   if (!isVisible) return null;
 
   const color = player === 'X' ? COLORS.playerX : COLORS.playerO;
   const dimColor = player === 'X' ? COLORS.playerXDim : COLORS.playerODim;
 
-  // Pad to MAX_MARKS slots
   const slots = Array(MAX_MARKS).fill(null).map((_, i) => marks[i] ?? null);
 
   return (
     <View style={styles.container}>
       <Text style={styles.label}>
-        {player === 'X' ? '🟣' : '🔵'} Next to vanish →
+        {player === 'X' ? '🟣' : '🟢'} {t('game.nextToVanish')}
       </Text>
       <View style={styles.slots}>
         {slots.map((mark, i) => {
@@ -37,7 +38,12 @@ export function GhostQueue({ player, marks, isVisible }: GhostQueueProps) {
               key={i}
               style={[
                 styles.slot,
-                { borderColor: color, backgroundColor: mark ? dimColor : COLORS.surface, opacity },
+                {
+                  borderColor: color,
+                  backgroundColor: mark ? dimColor : COLORS.surface,
+                  opacity,
+                },
+                isOldest && mark && glowShadow(color, 0.3),
               ]}
             >
               {isOldest && mark && (

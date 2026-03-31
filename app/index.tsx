@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,26 +6,52 @@ import {
   ScrollView,
   Switch,
   TouchableOpacity,
-  useWindowDimensions,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withSpring,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { COLORS, FONT_SIZES, RADIUS, SPACING } from '../src/constants/theme';
+import { useTranslation } from 'react-i18next';
+import { COLORS, FONT_SIZES, RADIUS, SPACING, SPRING, TIMING, PALETTE, glowShadow } from '../src/constants/theme';
 import { Button } from '../src/components/ui/Button';
 import { Difficulty, GameMode } from '../src/types/game';
+import { useLayout } from '../src/hooks/useLayout';
 
-/** Max content width for tablets / foldables — keeps UI comfortable */
-const MAX_CONTENT_WIDTH = 480;
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const layout = useLayout();
+  const { t } = useTranslation();
   const [mode, setMode] = useState<GameMode>('ai');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [ghostMode, setGhostMode] = useState(true);
   const [chaosMode, setChaosMode] = useState(false);
 
-  const contentWidth = Math.min(width, MAX_CONTENT_WIDTH);
+  const contentWidth = layout.contentMaxWidth;
+
+  // Floating ghost animation
+  const ghostY = useSharedValue(0);
+  useEffect(() => {
+    ghostY.value = withRepeat(
+      withSequence(
+        withTiming(-10, { duration: 1500 }),
+        withTiming(0, { duration: 1500 }),
+      ),
+      -1,
+      true,
+    );
+  }, []);
+
+  const ghostAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: ghostY.value }],
+  }));
 
   const handlePlay = () => {
     router.push({
@@ -33,6 +59,8 @@ export default function HomeScreen() {
       params: { mode, difficulty, ghostMode: ghostMode ? '1' : '0', chaosMode: chaosMode ? '1' : '0' },
     });
   };
+
+  const difficultyLabel = (d: Difficulty) => t(`home.${d}`);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
@@ -43,55 +71,35 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.ghost}>👻</Text>
-          <Text style={styles.title}>Ghost Tac Toe</Text>
-          <Text style={styles.subtitle}>Marks disappear. Strategies evolve.</Text>
+          <Animated.Text style={[styles.ghost, ghostAnimStyle]}>👻</Animated.Text>
+          <Text style={styles.title}>{t('app.name')}</Text>
+          <Text style={styles.subtitle}>{t('home.tagline')}</Text>
         </View>
 
         {/* Mode Selector */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Game Mode</Text>
+          <Text style={styles.sectionTitle}>{t('home.gameMode')}</Text>
           <View style={styles.segmented}>
-            <TouchableOpacity
-              style={[styles.segment, mode === 'ai' && styles.segmentActive]}
+            <SegmentButton
+              label={`🤖 ${t('home.vsAI')}`}
+              isActive={mode === 'ai'}
               onPress={() => setMode('ai')}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.segmentText, mode === 'ai' && styles.segmentTextActive]}>
-                🤖 vs AI
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.segment, mode === 'friend' && styles.segmentActive]}
+            />
+            <SegmentButton
+              label={`👥 ${t('home.vsFriend')}`}
+              isActive={mode === 'friend'}
               onPress={() => setMode('friend')}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.segmentText, mode === 'friend' && styles.segmentTextActive]}>
-                👥 vs Friend
-              </Text>
-            </TouchableOpacity>
+            />
           </View>
         </View>
 
         {/* Difficulty (AI only) */}
         {mode === 'ai' && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Difficulty</Text>
+            <Text style={styles.sectionTitle}>{t('home.difficulty')}</Text>
             <View style={styles.diffRow}>
               {(['easy', 'medium', 'hard'] as Difficulty[]).map((d) => (
-                <TouchableOpacity
-                  key={d}
-                  style={[styles.diffBtn, difficulty === d && getDiffBtnActiveStyle(d)]}
-                  onPress={() => setDifficulty(d)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.diffEmoji]}>
-                    {d === 'easy' ? '🌱' : d === 'medium' ? '🔥' : '💀'}
-                  </Text>
-                  <Text style={[styles.diffText, difficulty === d && styles.diffTextActive]}>
-                    {d.charAt(0).toUpperCase() + d.slice(1)}
-                  </Text>
-                </TouchableOpacity>
+                <DifficultyButton key={d} difficulty={d} label={difficultyLabel(d)} isActive={difficulty === d} onPress={() => setDifficulty(d)} />
               ))}
             </View>
           </View>
@@ -99,14 +107,12 @@ export default function HomeScreen() {
 
         {/* Twist Toggles */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Twists</Text>
+          <Text style={styles.sectionTitle}>{t('home.twists')}</Text>
           <View style={styles.card}>
             <View style={styles.toggleRow}>
               <View style={styles.toggleInfo}>
-                <Text style={styles.toggleTitle}>👻 Ghost Mode</Text>
-                <Text style={styles.toggleDesc}>
-                  Only 3 marks per player — oldest vanishes on 4th placement
-                </Text>
+                <Text style={styles.toggleTitle}>👻 {t('home.ghostMode')}</Text>
+                <Text style={styles.toggleDesc}>{t('home.ghostModeDesc')}</Text>
               </View>
               <Switch
                 value={ghostMode}
@@ -120,10 +126,8 @@ export default function HomeScreen() {
 
             <View style={styles.toggleRow}>
               <View style={styles.toggleInfo}>
-                <Text style={styles.toggleTitle}>⚡ Chaos Mode</Text>
-                <Text style={styles.toggleDesc}>
-                  Win through the glowing cell for bonus points
-                </Text>
+                <Text style={styles.toggleTitle}>⚡ {t('home.chaosMode')}</Text>
+                <Text style={styles.toggleDesc}>{t('home.chaosModeDesc')}</Text>
               </View>
               <Switch
                 value={chaosMode}
@@ -137,20 +141,30 @@ export default function HomeScreen() {
 
         {/* Play Button */}
         <Button
-          label="Play Now"
+          label={t('home.playNow')}
           onPress={handlePlay}
           variant="primary"
           fullWidth
           style={styles.playBtn}
         />
 
+        {/* Online Play */}
+        <TouchableOpacity
+          style={styles.onlineBtn}
+          onPress={() => router.push('/online')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.onlineBtnText}>🌐 Play Online</Text>
+          <Text style={styles.onlineBtnSub}>Ranked matches & leaderboards</Text>
+        </TouchableOpacity>
+
         {/* Footer nav */}
         <View style={styles.footer}>
           <TouchableOpacity onPress={() => router.push('/scores')} style={styles.footerBtn}>
-            <Text style={styles.footerText}>📊 Scores</Text>
+            <Text style={styles.footerText}>📊 {t('home.scores')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push('/settings')} style={styles.footerBtn}>
-            <Text style={styles.footerText}>⚙️ Settings</Text>
+            <Text style={styles.footerText}>⚙️ {t('home.settings')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -158,12 +172,60 @@ export default function HomeScreen() {
   );
 }
 
-function getDiffBtnActiveStyle(d: Difficulty) {
-  return {
-    borderColor: d === 'easy' ? COLORS.success : d === 'medium' ? COLORS.chaos : COLORS.danger,
-    backgroundColor: COLORS.surface,
-  };
+// ─── Sub-components ──────────────────────────────────────────────────
+
+function SegmentButton({ label, isActive, onPress }: { label: string; isActive: boolean; onPress: () => void }) {
+  const tapScale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: tapScale.value }],
+  }));
+
+  return (
+    <AnimatedTouchable
+      style={[styles.segment, isActive && styles.segmentActive, isActive && glowShadow(COLORS.playerX, 0.2), animStyle]}
+      onPress={onPress}
+      onPressIn={() => { tapScale.value = withTiming(0.95, { duration: 80 }); }}
+      onPressOut={() => { tapScale.value = withSpring(1, SPRING.bounce); }}
+      activeOpacity={0.85}
+    >
+      <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>
+        {label}
+      </Text>
+    </AnimatedTouchable>
+  );
 }
+
+function DifficultyButton({ difficulty, label, isActive, onPress }: { difficulty: Difficulty; label: string; isActive: boolean; onPress: () => void }) {
+  const tapScale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: tapScale.value }],
+  }));
+
+  const emoji = difficulty === 'easy' ? '🌱' : difficulty === 'medium' ? '🔥' : '💀';
+  const activeColor = difficulty === 'easy' ? COLORS.success : difficulty === 'medium' ? COLORS.chaos : COLORS.danger;
+
+  return (
+    <AnimatedTouchable
+      style={[
+        styles.diffBtn,
+        isActive && { borderColor: activeColor, backgroundColor: COLORS.surface },
+        isActive && glowShadow(activeColor, 0.2),
+        animStyle,
+      ]}
+      onPress={onPress}
+      onPressIn={() => { tapScale.value = withTiming(0.93, { duration: 80 }); }}
+      onPressOut={() => { tapScale.value = withSpring(1, SPRING.bounce); }}
+      activeOpacity={0.85}
+    >
+      <Text style={styles.diffEmoji}>{emoji}</Text>
+      <Text style={[styles.diffText, isActive && styles.diffTextActive]}>
+        {label}
+      </Text>
+    </AnimatedTouchable>
+  );
+}
+
+// ─── Styles ──────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   safe: {
@@ -183,7 +245,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   ghost: {
-    fontSize: 64,
+    fontSize: 72,
     marginBottom: SPACING.xs,
   },
   title: {
@@ -218,7 +280,7 @@ const styles = StyleSheet.create({
   },
   segment: {
     flex: 1,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.sm + 2,
     borderRadius: RADIUS.md,
     alignItems: 'center',
   },
@@ -242,7 +304,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceElevated,
     borderRadius: RADIUS.md,
     alignItems: 'center',
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.sm + 2,
     borderWidth: 2,
     borderColor: 'transparent',
   },
@@ -291,7 +353,28 @@ const styles = StyleSheet.create({
   },
   playBtn: {
     marginTop: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  onlineBtn: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderTopWidth: 3,
+    borderTopColor: PALETTE.mint.full,
+    alignItems: 'center',
     marginBottom: SPACING.lg,
+  },
+  onlineBtnText: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '700',
+    color: PALETTE.mint.full,
+  },
+  onlineBtnSub: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   footer: {
     flexDirection: 'row',

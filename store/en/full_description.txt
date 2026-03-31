@@ -1,0 +1,40 @@
+Think you've mastered Tic Tac Toe? Think again.
+
+Ghost Tac Toe reinvents the classic game with one simple rule change that transforms everything: each player can only have 3 marks on the board at once. Place your 4th mark, and your oldest one vanishes like a ghost. 👻
+
+This one twist eliminates draws, creates dramatic reversals, and demands a completely new strategy. You can't just block — you have to think about which of your marks will disappear next, and plan around your opponent's vanishing marks too.
+
+🎮 FEATURES
+
+★ Ghost Mode — The core twist. Only 3 marks per player. Your oldest mark fades and vanishes when you place a 4th. Watch marks age from solid to ghostly so you always know what's about to disappear.
+
+★ Chaos Mode — A random cell glows with lightning each turn. Win through that cell for bonus points. Adds an extra layer of risk and reward.
+
+★ Smart AI with 3 Difficulty Levels
+  • Easy — Perfect for learning the ghost mechanic
+  • Medium — Blocks your wins and looks for its own
+  • Hard — Full minimax AI that plans multiple moves ahead, accounting for ghost evictions
+
+★ Local 2-Player — Pass and play with a friend on the same device
+
+★ Beautiful Dark Theme — Neon purple and cyan marks on a deep space background. Smooth spring animations on placement, dramatic fade effects on ghost evictions, and animated win lines.
+
+★ Haptic Feedback — Feel every mark placement, ghost eviction, and victory with satisfying haptic patterns
+
+★ Stats Tracking — Track your wins, losses, draws, and win streaks across all difficulty levels
+
+★ Works Offline — No internet required. No ads. No in-app purchases. Just pure strategy.
+
+★ Adaptive for All Screens — Designed for phones, tablets, and foldables. Properly handles camera cutouts and notches on all modern Android devices.
+
+HOW TO PLAY
+
+1. Players take turns placing X or O on a 3×3 grid
+2. Get 3 in a row to win (horizontal, vertical, or diagonal)
+3. In Ghost Mode: when you place your 4th mark, your oldest mark disappears
+4. Marks visually fade as they age — full color → dim → ghostly
+5. Plan ahead: your winning line might vanish before you complete it!
+
+Ghost Tac Toe is a perfect quick game for commutes, waiting rooms, or whenever you have 2 minutes and want a satisfying brain challenge.
+
+No ads. No tracking. No data collection. Just a beautifully crafted strategy game.

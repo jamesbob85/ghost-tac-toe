@@ -3,25 +3,32 @@ import {
   View,
   Text,
   StyleSheet,
-  useWindowDimensions,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { COLORS, FONT_SIZES, SPACING } from '../src/constants/theme';
+import { useTranslation } from 'react-i18next';
+import { I18nManager } from 'react-native';
+import { COLORS, FONT_SIZES, RADIUS, SPACING } from '../src/constants/theme';
 import { GameSettings, Difficulty, GameMode } from '../src/types/game';
 import { useGameState } from '../src/hooks/useGameState';
 import { useAI } from '../src/hooks/useAI';
 import { useHaptics } from '../src/hooks/useHaptics';
 import { useSound } from '../src/hooks/useSound';
+import { useLayout } from '../src/hooks/useLayout';
+import { useInput } from '../src/hooks/useInput';
 import { Board } from '../src/components/board/Board';
 import { PlayerBadge } from '../src/components/game/PlayerBadge';
 import { GhostQueue } from '../src/components/game/GhostQueue';
 import { GameOverModal } from '../src/components/ui/Modal';
 import { recordGameResult } from '../src/store/statsStore';
+import { checkAchievements, GameResult } from '../src/services/achievements';
 
 export default function GameScreen() {
   const router = useRouter();
+  const layout = useLayout();
+  const { t } = useTranslation();
+  const backArrow = I18nManager.isRTL ? '→' : '←';
   const params = useLocalSearchParams<{
     mode: string;
     difficulty: string;
@@ -43,16 +50,7 @@ export default function GameScreen() {
   const prevPhaseRef = useRef(state.phase);
   const modalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { width, height } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
 
-  // Responsive board: fit within available space minus chrome (badges, queue, controls)
-  // Reserve ~280px for UI chrome in portrait, use shorter dimension for landscape/foldables
-  const availableWidth = width - SPACING.lg * 2 - insets.left - insets.right;
-  const availableHeight = height - insets.top - insets.bottom - 280;
-  const boardWidth = Math.min(availableWidth, availableHeight, 400);
-
-  // Stable refs so callbacks don't change identity on every render
   const makeMoveRef = useRef(makeMove);
   makeMoveRef.current = makeMove;
   const hapticsRef = useRef(haptics);
@@ -61,46 +59,14 @@ export default function GameScreen() {
   soundRef.current = sound;
 
   const isAIMode = settings.mode === 'ai';
+  const isAIThinking = isAIMode && state.currentPlayer === 'O' && state.phase === 'playing';
+  const isDisabled = isAIThinking || state.phase !== 'playing';
 
-  // Clear timers on unmount to avoid setState on unmounted component
-  useEffect(() => {
-    return () => {
-      if (modalTimerRef.current) clearTimeout(modalTimerRef.current);
-      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
-    };
-  }, []);
-
-  // Load haptics setting once
-  useEffect(() => {
-    haptics.loadEnabled();
-  }, []);
-
-  // Detect game over
-  useEffect(() => {
-    if (state.phase !== 'playing' && prevPhaseRef.current === 'playing') {
-      // Haptics & sound
-      if (state.phase === 'won') {
-        hapticsRef.current.win();
-        soundRef.current.play('win');
-      } else {
-        hapticsRef.current.draw();
-        soundRef.current.play('draw');
-      }
-
-      // Record stats
-      recordGameResult(settings.mode, settings.difficulty, state.winner).catch(() => {});
-
-      // Show modal after brief delay so win animation plays
-      if (modalTimerRef.current) clearTimeout(modalTimerRef.current);
-      modalTimerRef.current = setTimeout(() => setShowModal(true), 600);
-    }
-    prevPhaseRef.current = state.phase;
-  }, [state.phase, state.winner]);
-
+  // ─── Input handling ────────────────────────────────────────────────
   const handleCellPress = useCallback(
     (index: number) => {
       if (state.phase !== 'playing') return;
-      if (isAIMode && state.currentPlayer === 'O') return; // AI's turn
+      if (isAIMode && state.currentPlayer === 'O') return;
 
       makeMoveRef.current(index);
       hapticsRef.current.placeMark();
@@ -109,15 +75,75 @@ export default function GameScreen() {
     [state.phase, state.currentPlayer, isAIMode],
   );
 
-  // Stable AI move handler — uses refs so identity never changes
   const handleAIMove = useCallback((index: number) => {
     makeMoveRef.current(index);
     hapticsRef.current.placeMark();
     soundRef.current.play('place');
   }, []);
 
-  // AI hook
+  const handleBack = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const handleNewGame = useCallback(() => {
+    resetGame();
+  }, [resetGame]);
+
+  // Keyboard/controller input
+  const { focusedCell, inputMode, onTouchInteraction } = useInput({
+    onCellSelect: handleCellPress,
+    onBack: handleBack,
+    onNewGame: handleNewGame,
+    board: state.board,
+    disabled: isDisabled,
+  });
+
+  // ─── Lifecycle ─────────────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      if (modalTimerRef.current) clearTimeout(modalTimerRef.current);
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    haptics.loadEnabled();
+  }, []);
+
   useAI(state, isAIMode, settings.difficulty, handleAIMove);
+
+  // Detect game over
+  useEffect(() => {
+    if (state.phase !== 'playing' && prevPhaseRef.current === 'playing') {
+      if (state.phase === 'won') {
+        hapticsRef.current.win();
+        soundRef.current.play('win');
+      } else {
+        hapticsRef.current.draw();
+        soundRef.current.play('draw');
+      }
+
+      recordGameResult(settings.mode, settings.difficulty, state.winner).then((stats) => {
+        // Check achievements after recording stats
+        const gameResult: GameResult = {
+          mode: settings.mode,
+          difficulty: settings.difficulty,
+          winner: state.winner,
+          playerSide: 'X',
+          ghostMode: settings.ghostMode,
+          chaosMode: settings.chaosMode,
+          chaosCellInWinLine: !!(state.winLine && state.chaosCell !== null && state.winLine.includes(state.chaosCell)),
+          turnNumber: state.turnNumber,
+          winStreak: stats.winStreak,
+        };
+        checkAchievements(gameResult, null).catch(() => {});
+      }).catch(() => {});
+
+      if (modalTimerRef.current) clearTimeout(modalTimerRef.current);
+      modalTimerRef.current = setTimeout(() => setShowModal(true), 600);
+    }
+    prevPhaseRef.current = state.phase;
+  }, [state.phase, state.winner]);
 
   const handlePlayAgain = () => {
     setShowModal(false);
@@ -130,86 +156,133 @@ export default function GameScreen() {
     router.back();
   };
 
-  const isAIThinking = isAIMode && state.currentPlayer === 'O' && state.phase === 'playing';
-  const isDisabled = isAIThinking || state.phase !== 'playing';
-
+  // ─── Labels ────────────────────────────────────────────────────────
   const getPlayerLabel = (player: 'X' | 'O') => {
-    if (isAIMode) return player === 'X' ? 'You' : 'AI';
-    return `Player ${player}`;
+    if (isAIMode) return player === 'X' ? t('game.you') : t('game.ai');
+    return player === 'X' ? t('game.playerX') : t('game.playerO');
   };
 
   const getTurnText = () => {
     if (state.phase === 'won') {
-      if (isAIMode) return state.winner === 'X' ? 'You won! 🏆' : 'AI wins! 🤖';
-      return `Player ${state.winner} wins! 🎉`;
+      if (isAIMode) return state.winner === 'X' ? t('game.youWon') : t('game.aiWins');
+      return t('game.playerWins', { player: state.winner });
     }
-    if (state.phase === 'draw') return "It's a draw! 🤝";
-    if (isAIThinking) return 'AI is thinking... 🤔';
-    if (isAIMode) return "Your turn!";
-    return `Player ${state.currentPlayer}'s turn`;
+    if (state.phase === 'draw') return t('game.draw');
+    if (isAIThinking) return t('game.aiThinking');
+    if (isAIMode) return t('game.yourTurn');
+    return t('game.playerTurn', { player: state.currentPlayer });
   };
+
+  // ─── Render ────────────────────────────────────────────────────────
+  const { isLandscape, boardSize } = layout;
+
+  const header = (
+    <View style={styles.header}>
+      <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
+        <Text style={styles.backText}>{backArrow} {t('game.back')}</Text>
+      </TouchableOpacity>
+      <View style={styles.modeBadges}>
+        {settings.ghostMode && <Text style={styles.modeBadge}>👻 {t('game.ghost')}</Text>}
+        {settings.chaosMode && <Text style={styles.modeBadge}>⚡ {t('game.chaos')}</Text>}
+      </View>
+    </View>
+  );
+
+  const badges = (
+    <View style={[styles.badges, isLandscape && styles.badgesLandscape]}>
+      <View style={isLandscape ? styles.badgeWrapLandscape : styles.badgeWrapPortrait}>
+        <PlayerBadge
+          player="X"
+          score={state.players.X.score}
+          isActive={state.currentPlayer === 'X' && state.phase === 'playing'}
+          label={getPlayerLabel('X')}
+        />
+      </View>
+      <View style={isLandscape ? styles.badgeWrapLandscape : styles.badgeWrapPortrait}>
+        <PlayerBadge
+          player="O"
+          score={state.players.O.score}
+          isActive={state.currentPlayer === 'O' && state.phase === 'playing'}
+          label={getPlayerLabel('O')}
+        />
+      </View>
+    </View>
+  );
+
+  const turnIndicator = (
+    <Text style={styles.turnText}>{getTurnText()}</Text>
+  );
+
+  const board = (
+    <View style={styles.boardContainer}>
+      <Board
+        state={state}
+        onCellPress={handleCellPress}
+        disabled={isDisabled}
+        boardWidth={boardSize}
+        focusedCell={focusedCell}
+        onTouchInteraction={onTouchInteraction}
+      />
+    </View>
+  );
+
+  const ghostQueue = settings.ghostMode ? (
+    <View style={styles.queueRow}>
+      <GhostQueue
+        player={state.currentPlayer}
+        marks={state.players[state.currentPlayer].marks}
+        isVisible={state.phase === 'playing'}
+      />
+    </View>
+  ) : null;
+
+  const controls = (
+    <View style={styles.controls}>
+      <TouchableOpacity onPress={handleNewGame} style={styles.controlBtn}>
+        <Text style={styles.controlText}>🔄 {t('game.newGame')}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Input mode hint (shown briefly when keyboard is detected)
+  const inputHint = inputMode === 'keyboard' ? (
+    <Text style={styles.inputHint}>⌨️ {t('game.keyboardHint')}</Text>
+  ) : null;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={styles.backText}>← Back</Text>
-          </TouchableOpacity>
-          <View style={styles.modeBadges}>
-            {settings.ghostMode && <Text style={styles.modeBadge}>👻 Ghost</Text>}
-            {settings.chaosMode && <Text style={styles.modeBadge}>⚡ Chaos</Text>}
+      {isLandscape ? (
+        // ─── Landscape: side-by-side ───────────────────────────────
+        <View style={styles.landscapeContainer}>
+          {header}
+          <View style={styles.landscapeBody}>
+            {/* Left: Board */}
+            <View style={styles.landscapeLeft}>
+              {board}
+            </View>
+            {/* Right: Game info */}
+            <View style={styles.landscapeRight}>
+              {badges}
+              {turnIndicator}
+              {ghostQueue}
+              <View style={styles.landscapeSpacer} />
+              {inputHint}
+              {controls}
+            </View>
           </View>
         </View>
-
-        {/* Player Badges */}
-        <View style={styles.badges}>
-          <PlayerBadge
-            player="X"
-            score={state.players.X.score}
-            isActive={state.currentPlayer === 'X' && state.phase === 'playing'}
-            label={getPlayerLabel('X')}
-          />
-          <PlayerBadge
-            player="O"
-            score={state.players.O.score}
-            isActive={state.currentPlayer === 'O' && state.phase === 'playing'}
-            label={getPlayerLabel('O')}
-          />
+      ) : (
+        // ─── Portrait: stacked ─────────────────────────────────────
+        <View style={styles.container}>
+          {header}
+          {badges}
+          {turnIndicator}
+          {board}
+          {ghostQueue}
+          {inputHint}
+          {controls}
         </View>
-
-        {/* Turn indicator */}
-        <Text style={styles.turnText}>{getTurnText()}</Text>
-
-        {/* Board */}
-        <View style={styles.boardContainer}>
-          <Board
-            state={state}
-            onCellPress={handleCellPress}
-            disabled={isDisabled}
-            boardWidth={boardWidth}
-          />
-        </View>
-
-        {/* Ghost Queue */}
-        {settings.ghostMode && (
-          <View style={styles.queueRow}>
-            <GhostQueue
-              player={state.currentPlayer}
-              marks={state.players[state.currentPlayer].marks}
-              isVisible={state.phase === 'playing'}
-            />
-          </View>
-        )}
-
-        {/* Bottom controls */}
-        <View style={styles.controls}>
-          <TouchableOpacity onPress={resetGame} style={styles.controlBtn}>
-            <Text style={styles.controlText}>🔄 New Game</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      )}
 
       <GameOverModal
         visible={showModal}
@@ -229,17 +302,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+
+  // ─── Portrait layout ─────────────────────────────────────────────
   container: {
     flex: 1,
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.md,
     paddingBottom: SPACING.md,
   },
+
+  // ─── Landscape layout ────────────────────────────────────────────
+  landscapeContainer: {
+    flex: 1,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.xs,
+    paddingBottom: SPACING.xs,
+  },
+  landscapeBody: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: SPACING.lg,
+  },
+  landscapeLeft: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  landscapeRight: {
+    flex: 0.45,
+    minWidth: 200,
+    justifyContent: 'center',
+    paddingVertical: SPACING.sm,
+  },
+  landscapeSpacer: {
+    flex: 1,
+  },
+
+  // ─── Shared styles ───────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   backBtn: {
     padding: SPACING.xs,
@@ -259,13 +363,24 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceElevated,
     paddingHorizontal: SPACING.sm,
     paddingVertical: 3,
-    borderRadius: 20,
+    borderRadius: RADIUS.full,
     overflow: 'hidden',
   },
   badges: {
     flexDirection: 'row',
     gap: SPACING.sm,
     marginBottom: SPACING.md,
+  },
+  badgesLandscape: {
+    flexDirection: 'column',
+    gap: SPACING.xs,
+    marginBottom: SPACING.sm,
+  },
+  badgeWrapPortrait: {
+    flex: 1,
+  },
+  badgeWrapLandscape: {
+    // No flex — badge takes natural height in column layout
   },
   turnText: {
     fontSize: FONT_SIZES.md,
@@ -297,5 +412,11 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
     fontWeight: '600',
+  },
+  inputHint: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    marginTop: SPACING.xs,
   },
 });

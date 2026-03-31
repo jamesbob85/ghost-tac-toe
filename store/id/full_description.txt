@@ -1,0 +1,40 @@
+Merasa sudah menguasai Tic Tac Toe? Pikir lagi.
+
+Ghost Tac Toe menciptakan ulang permainan klasik dengan satu perubahan aturan sederhana yang mengubah segalanya: setiap pemain hanya bisa memiliki 3 tanda di papan sekaligus. Letakkan tanda ke-4 dan tanda tertua kamu akan menghilang seperti hantu. 👻
+
+Satu perubahan ini menghilangkan seri, menciptakan pembalikan dramatis, dan menuntut strategi yang benar-benar baru. Tidak cukup hanya memblokir — kamu harus memikirkan tanda mana yang akan menghilang berikutnya, dan merencanakan tanda lawan yang akan menghilang juga.
+
+🎮 FITUR
+
+★ Mode Hantu — Inti permainan. Hanya 3 tanda per pemain. Tanda tertua memudar dan menghilang saat kamu meletakkan yang ke-4. Amati tanda berubah dari solid menjadi transparan agar selalu tahu apa yang akan menghilang selanjutnya.
+
+★ Mode Kekacauan — Sel acak menyala dengan kilat setiap giliran. Menang melalui sel itu untuk poin bonus. Lapisan ekstra risiko dan hadiah.
+
+★ AI Cerdas — 3 Tingkat Kesulitan
+  • Mudah — Sempurna untuk mempelajari mekanik hantu
+  • Sedang — Memblokir kemenanganmu dan mencari peluangnya sendiri
+  • Sulit — AI minimax penuh yang merencanakan beberapa langkah ke depan, memperhitungkan penghilangan hantu
+
+★ 2 Pemain Lokal — Main dengan teman di perangkat yang sama
+
+★ Tema Gelap yang Indah — Tanda neon ungu dan sian di latar belakang luar angkasa. Animasi halus saat penempatan, efek pudar yang dramatis, dan garis kemenangan animasi.
+
+★ Umpan Balik Haptik — Rasakan setiap penempatan, setiap penghilangan, dan setiap kemenangan dengan pola getaran yang memuaskan
+
+★ Pelacakan Statistik — Lacak kemenangan, kekalahan, seri, dan rekor beruntun di semua tingkat kesulitan
+
+★ Bisa Offline — Tidak perlu internet. Tanpa iklan. Tanpa pembelian dalam aplikasi. Strategi murni.
+
+★ Adaptif untuk Semua Layar — Dirancang untuk ponsel, tablet, dan perangkat lipat. Menangani potongan kamera dan notch dengan benar di semua perangkat Android modern.
+
+CARA BERMAIN
+
+1. Pemain bergantian meletakkan X atau O di grid 3×3
+2. Dapatkan 3 berturut-turut untuk menang (horizontal, vertikal, atau diagonal)
+3. Di Mode Hantu: saat kamu meletakkan tanda ke-4, tanda tertua menghilang
+4. Tanda memudar secara visual seiring waktu — warna penuh → redup → transparan
+5. Rencanakan ke depan: garis kemenanganmu bisa menghilang sebelum selesai!
+
+Ghost Tac Toe adalah permainan cepat yang sempurna untuk perjalanan, ruang tunggu, atau kapan pun kamu punya 2 menit dan ingin tantangan otak yang memuaskan.
+
+Tanpa iklan. Tanpa pelacakan. Tanpa pengumpulan data. Hanya permainan strategi yang dibuat dengan indah.

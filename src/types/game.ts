@@ -3,7 +3,7 @@ export type CellValue = Player | null;
 export type Board = CellValue[]; // length 9, indices 0-8
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
-export type GameMode = 'ai' | 'friend';
+export type GameMode = 'ai' | 'friend' | 'online';
 
 export interface MarkEntry {
   index: number; // board cell index (0-8)

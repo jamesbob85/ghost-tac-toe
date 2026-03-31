@@ -12,13 +12,14 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { COLORS, RADIUS, SPACING, FONT_SIZES } from '../../constants/theme';
+import { useTranslation } from 'react-i18next';
+import { COLORS, RADIUS, SPACING, FONT_SIZES, SPRING, TIMING, glowShadow } from '../../constants/theme';
 import { Button } from './Button';
 import { Player } from '../../types/game';
 
 interface GameOverModalProps {
   visible: boolean;
-  winner: Player | null; // null = draw
+  winner: Player | null;
   scoreX: number;
   scoreO: number;
   isAIMode: boolean;
@@ -35,16 +36,20 @@ export function GameOverModal({
   onPlayAgain,
   onGoHome,
 }: GameOverModalProps) {
+  const { t } = useTranslation();
   const translateY = useSharedValue(300);
   const opacity = useSharedValue(0);
+  const emojiScale = useSharedValue(0);
 
   useEffect(() => {
     if (visible) {
-      opacity.value = withTiming(1, { duration: 200 });
-      translateY.value = withSpring(0, { damping: 15, stiffness: 120 });
+      opacity.value = withTiming(1, TIMING.fadeIn);
+      translateY.value = withSpring(0, SPRING.gentle);
+      emojiScale.value = withSpring(1, SPRING.bounce);
     } else {
-      opacity.value = withTiming(0, { duration: 150 });
-      translateY.value = withTiming(300, { duration: 200 });
+      opacity.value = withTiming(0, TIMING.fadeOut);
+      translateY.value = withTiming(300, TIMING.fadeIn);
+      emojiScale.value = withTiming(0, TIMING.fadeOut);
     }
   }, [visible]);
 
@@ -52,11 +57,14 @@ export function GameOverModal({
   const sheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
+  const emojiStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: emojiScale.value }],
+  }));
 
   const getTitle = () => {
-    if (winner === null) return "It's a Draw!";
-    if (isAIMode) return winner === 'X' ? 'You Win! 🎉' : 'AI Wins! 🤖';
-    return `Player ${winner} Wins! 🎉`;
+    if (winner === null) return t('modal.itsADraw');
+    if (isAIMode) return winner === 'X' ? t('modal.youWin') : t('modal.aiWins');
+    return t('modal.playerWins', { player: winner });
   };
 
   const getTitleColor = () => {
@@ -67,15 +75,21 @@ export function GameOverModal({
   const getEmoji = () => {
     if (winner === null) return '🤝';
     if (isAIMode) return winner === 'X' ? '🏆' : '💀';
-    return winner === 'X' ? '🟣' : '🔵';
+    return winner === 'X' ? '🟣' : '🟢';
+  };
+
+  const getGlow = () => {
+    if (winner === 'X') return glowShadow(COLORS.playerX, 0.4);
+    if (winner === 'O') return glowShadow(COLORS.playerO, 0.4);
+    return {};
   };
 
   return (
     <RNModal visible={visible} transparent animationType="none">
       <Animated.View style={[styles.backdrop, backdropStyle]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onPlayAgain} />
-        <Animated.View style={[styles.sheet, sheetStyle]}>
-          <Text style={styles.emoji}>{getEmoji()}</Text>
+        <Animated.View style={[styles.sheet, getGlow(), sheetStyle]}>
+          <Animated.Text style={[styles.emoji, emojiStyle]}>{getEmoji()}</Animated.Text>
           <Text style={[styles.title, { color: getTitleColor() }]}>
             {getTitle()}
           </Text>
@@ -83,16 +97,16 @@ export function GameOverModal({
           <View style={styles.scoreRow}>
             <View style={styles.scoreBox}>
               <Text style={[styles.scoreLabel, { color: COLORS.playerX }]}>
-                {isAIMode ? 'You' : 'Player X'}
+                {isAIMode ? t('game.you') : t('game.playerX')}
               </Text>
               <Text style={[styles.scoreValue, { color: COLORS.playerX }]}>
                 {scoreX}
               </Text>
             </View>
-            <Text style={styles.scoreDivider}>vs</Text>
+            <Text style={styles.scoreDivider}>{t('modal.vs')}</Text>
             <View style={styles.scoreBox}>
               <Text style={[styles.scoreLabel, { color: COLORS.playerO }]}>
-                {isAIMode ? 'AI' : 'Player O'}
+                {isAIMode ? t('game.ai') : t('game.playerO')}
               </Text>
               <Text style={[styles.scoreValue, { color: COLORS.playerO }]}>
                 {scoreO}
@@ -102,13 +116,13 @@ export function GameOverModal({
 
           <View style={styles.buttons}>
             <Button
-              label="Play Again"
+              label={t('modal.playAgain')}
               onPress={onPlayAgain}
               variant="primary"
               fullWidth
             />
             <Button
-              label="Main Menu"
+              label={t('modal.mainMenu')}
               onPress={onGoHome}
               variant="secondary"
               fullWidth
@@ -135,7 +149,7 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xl + 16,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.borderFocus,
   },
   emoji: {
     fontSize: 64,

@@ -20,7 +20,6 @@ interface WinLineProps {
   boardSize: number;
 }
 
-// Map cell index to [col, row] (0-indexed)
 function cellToGrid(index: number): [number, number] {
   return [index % 3, Math.floor(index / 3)];
 }
@@ -36,13 +35,11 @@ function cellCenter(col: number, row: number, boardSize: number): [number, numbe
 export function WinLine({ winLine, winner, boardSize }: WinLineProps) {
   const progress = useSharedValue(0);
 
-  // Compute line endpoints (safe to run even when winLine is null — values unused)
   const [c1, r1] = winLine ? cellToGrid(winLine[0]) : [0, 0];
   const [c2, r2] = winLine ? cellToGrid(winLine[2]) : [2, 2];
   const [x1, y1] = cellCenter(c1, r1, boardSize);
   const [x2, y2] = cellCenter(c2, r2, boardSize);
 
-  // ALL hooks must be called before any conditional return
   useEffect(() => {
     if (winLine) {
       progress.value = 0;
@@ -62,7 +59,6 @@ export function WinLine({ winLine, winner, boardSize }: WinLineProps) {
     } as { strokeDashoffset: number; strokeDasharray: number[] };
   });
 
-  // Conditional render AFTER all hooks
   if (!winLine || !winner) return null;
 
   const stroke = winner === 'X' ? COLORS.playerX : COLORS.playerO;

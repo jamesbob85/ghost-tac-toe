@@ -1,0 +1,1 @@
+Tic Tac Toe with a twist — your oldest mark vanishes. Outsmart the ghost!

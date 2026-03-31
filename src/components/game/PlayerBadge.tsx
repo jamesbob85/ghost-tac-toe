@@ -6,15 +6,16 @@ import Animated, {
   withRepeat,
   withTiming,
   withSequence,
+  withSpring,
 } from 'react-native-reanimated';
 import { Player } from '../../types/game';
-import { COLORS, FONT_SIZES, RADIUS, SPACING } from '../../constants/theme';
+import { COLORS, FONT_SIZES, RADIUS, SPACING, SPRING, glowShadow } from '../../constants/theme';
 
 interface PlayerBadgeProps {
   player: Player;
   score: number;
   isActive: boolean;
-  label: string; // e.g. "You" / "AI" / "Player X"
+  label: string;
 }
 
 export function PlayerBadge({ player, score, isActive, label }: PlayerBadgeProps) {
@@ -22,15 +23,16 @@ export function PlayerBadge({ player, score, isActive, label }: PlayerBadgeProps
   const dimColor = player === 'X' ? COLORS.playerXDim : COLORS.playerODim;
 
   const scale = useSharedValue(1);
-  const borderOpacity = useSharedValue(0);
+  const glowOpacity = useSharedValue(0);
+  const dotScale = useSharedValue(0);
 
   useEffect(() => {
     if (isActive) {
       scale.value = withSequence(
         withTiming(1.04, { duration: 150 }),
-        withTiming(1, { duration: 150 }),
+        withSpring(1, SPRING.bounce),
       );
-      borderOpacity.value = withRepeat(
+      glowOpacity.value = withRepeat(
         withSequence(
           withTiming(1, { duration: 600 }),
           withTiming(0.3, { duration: 600 }),
@@ -38,22 +40,32 @@ export function PlayerBadge({ player, score, isActive, label }: PlayerBadgeProps
         -1,
         false,
       );
+      dotScale.value = withSpring(1, SPRING.bounce);
     } else {
-      borderOpacity.value = withTiming(0, { duration: 200 });
+      glowOpacity.value = withTiming(0, { duration: 200 });
       scale.value = withTiming(1, { duration: 200 });
+      dotScale.value = withTiming(0, { duration: 150 });
     }
   }, [isActive]);
 
   const containerStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    borderColor: `rgba(${player === 'X' ? '139, 92, 246' : '6, 182, 212'}, ${borderOpacity.value})`,
+    borderColor: `rgba(${player === 'X' ? '167, 139, 250' : '78, 205, 196'}, ${glowOpacity.value * 0.7})`,
+  }));
+
+  const dotStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: dotScale.value }],
+    opacity: dotScale.value,
   }));
 
   return (
     <Animated.View
       style={[
         styles.container,
-        { backgroundColor: isActive ? dimColor : COLORS.surfaceElevated },
+        {
+          backgroundColor: isActive ? dimColor : COLORS.surfaceElevated,
+        },
+        isActive && glowShadow(color, 0.25),
         containerStyle,
       ]}
     >
@@ -64,9 +76,7 @@ export function PlayerBadge({ player, score, isActive, label }: PlayerBadgeProps
         </Text>
         <Text style={[styles.score, { color }]}>{score}</Text>
       </View>
-      {isActive && (
-        <View style={[styles.activeDot, { backgroundColor: color }]} />
-      )}
+      <Animated.View style={[styles.activeDot, { backgroundColor: color }, dotStyle]} />
     </Animated.View>
   );
 }
@@ -79,7 +89,6 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.lg,
     gap: SPACING.sm,
-    flex: 1,
     borderWidth: 2,
     borderColor: 'transparent',
     position: 'relative',
@@ -102,9 +111,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   activeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     position: 'absolute',
     top: 8,
     right: 8,

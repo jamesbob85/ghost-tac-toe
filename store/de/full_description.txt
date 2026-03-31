@@ -1,0 +1,40 @@
+Du glaubst, du beherrschst Tic Tac Toe? Denk nochmal nach.
+
+Ghost Tac Toe erfindet das klassische Spiel mit einer einfachen Regeländerung neu, die alles verändert: Jeder Spieler kann nur 3 Zeichen gleichzeitig auf dem Spielfeld haben. Setze dein 4. Zeichen und dein ältestes verschwindet wie ein Geist. 👻
+
+Dieser eine Twist eliminiert Unentschieden, erzeugt dramatische Wendungen und erfordert eine völlig neue Strategie. Blockieren allein reicht nicht — du musst vorausdenken, welche deiner Markierungen als nächstes verschwinden und die Geisterzeichen deines Gegners einplanen.
+
+🎮 FEATURES
+
+★ Geistermodus — Der zentrale Twist. Nur 3 Zeichen pro Spieler. Dein ältestes Zeichen verblasst und verschwindet, wenn du das 4. setzt. Beobachte, wie Zeichen von solide zu geisterhaft altern, damit du immer weißt, was als Nächstes verschwindet.
+
+★ Chaos-Modus — Eine zufällige Zelle leuchtet jeden Zug mit Blitzen auf. Gewinne durch diese Zelle für Bonuspunkte. Eine zusätzliche Ebene von Risiko und Belohnung.
+
+★ Intelligente KI mit 3 Schwierigkeitsgraden
+  • Leicht — Perfekt zum Erlernen der Geistermechanik
+  • Mittel — Blockt deine Siege und sucht eigene Chancen
+  • Schwer — Vollständige Minimax-KI, die mehrere Züge vorausplant und Geister-Vertreibungen berücksichtigt
+
+★ Lokaler 2-Spieler-Modus — Spiele mit einem Freund auf demselben Gerät
+
+★ Wunderschönes Dunkles Design — Neon-violette und cyan Zeichen auf einem Weltraum-Hintergrund. Flüssige Animationen beim Setzen, dramatische Verblassungseffekte und animierte Gewinnlinien.
+
+★ Haptisches Feedback — Spüre jedes Setzen, jedes Verschwinden und jeden Sieg mit befriedigenden haptischen Mustern
+
+★ Statistik-Tracking — Verfolge deine Siege, Niederlagen, Unentschieden und Siegesserien über alle Schwierigkeitsgrade
+
+★ Funktioniert Offline — Kein Internet nötig. Keine Werbung. Keine In-App-Käufe. Reine Strategie.
+
+★ Für Alle Bildschirme — Entwickelt für Smartphones, Tablets und Faltbare. Korrekte Handhabung von Kameraaussparungen und Notches auf allen modernen Android-Geräten.
+
+SO WIRD GESPIELT
+
+1. Spieler setzen abwechselnd X oder O auf ein 3×3-Raster
+2. Erreiche 3 in einer Reihe zum Gewinnen (horizontal, vertikal oder diagonal)
+3. Im Geistermodus: Wenn du dein 4. Zeichen setzt, verschwindet dein ältestes
+4. Zeichen verblassen visuell mit dem Alter — volle Farbe → gedämpft → geisterhaft
+5. Vorausplanen: Deine Gewinnlinie könnte verschwinden, bevor du sie vervollständigst!
+
+Ghost Tac Toe ist das perfekte Kurzspiel für Pendeln, Wartezimmer, oder wann immer du 2 Minuten hast und eine befriedigende Denkaufgabe suchst.
+
+Keine Werbung. Kein Tracking. Keine Datensammlung. Einfach ein wunderschön gestaltetes Strategiespiel.

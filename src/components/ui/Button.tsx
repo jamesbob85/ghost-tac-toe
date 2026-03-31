@@ -1,15 +1,23 @@
 import React from 'react';
 import {
-  TouchableOpacity,
   Text,
   StyleSheet,
   ViewStyle,
   TextStyle,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
-import { COLORS, RADIUS, SPACING, FONT_SIZES } from '../../constants/theme';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { COLORS, RADIUS, SPACING, FONT_SIZES, SPRING, glowShadow } from '../../constants/theme';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 interface ButtonProps {
   label: string;
@@ -32,20 +40,37 @@ export function Button({
   textStyle,
   fullWidth = false,
 }: ButtonProps) {
+  const tapScale = useSharedValue(1);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: tapScale.value }],
+  }));
+
+  const handlePressIn = () => {
+    tapScale.value = withTiming(0.95, { duration: 80 });
+  };
+
+  const handlePressOut = () => {
+    tapScale.value = withSpring(1, SPRING.bounce);
+  };
+
   const containerStyle = [
     styles.base,
     styles[variant],
+    variant === 'primary' && glowShadow(COLORS.playerX, 0.25),
     fullWidth && styles.fullWidth,
     (disabled || loading) && styles.disabled,
     style,
   ];
 
   return (
-    <TouchableOpacity
-      style={containerStyle}
+    <AnimatedTouchable
+      style={[containerStyle, animStyle]}
       onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       disabled={disabled || loading}
-      activeOpacity={0.75}
+      activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: disabled || loading }}
@@ -60,7 +85,7 @@ export function Button({
           {label}
         </Text>
       )}
-    </TouchableOpacity>
+    </AnimatedTouchable>
   );
 }
 

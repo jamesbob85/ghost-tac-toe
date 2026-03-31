@@ -1,0 +1,40 @@
+Vous pensez maîtriser le Morpion ? Détrompez-vous.
+
+Ghost Tac Toe réinvente le jeu classique avec un simple changement de règle qui transforme tout : chaque joueur ne peut avoir que 3 marques sur le plateau à la fois. Posez votre 4ème marque et la plus ancienne disparaît comme un fantôme. 👻
+
+Cette unique modification élimine les matchs nuls, crée des retournements spectaculaires et exige une stratégie entièrement nouvelle. Bloquer ne suffit plus — vous devez anticiper quelles marques vont disparaître, les vôtres comme celles de votre adversaire.
+
+🎮 FONCTIONNALITÉS
+
+★ Mode Fantôme — La mécanique centrale. Seulement 3 marques par joueur. Votre plus ancienne marque s'efface quand vous posez la 4ème. Observez les marques vieillir du solide au fantomatique pour toujours savoir ce qui va disparaître.
+
+★ Mode Chaos — Une cellule aléatoire s'illumine d'éclairs à chaque tour. Gagnez à travers cette cellule pour des points bonus. Une couche supplémentaire de risque et de récompense.
+
+★ IA Intelligente avec 3 Niveaux de Difficulté
+  • Facile — Parfait pour apprendre la mécanique fantôme
+  • Moyen — Bloque vos victoires et cherche les siennes
+  • Difficile — IA minimax complète qui planifie plusieurs coups à l'avance, en tenant compte des disparitions
+
+★ 2 Joueurs en Local — Jouez avec un ami sur le même appareil
+
+★ Magnifique Thème Sombre — Marques néon violet et cyan sur fond d'espace profond. Animations fluides au placement, effets de disparition spectaculaires et lignes de victoire animées.
+
+★ Retour Haptique — Ressentez chaque placement, chaque disparition et chaque victoire grâce à des vibrations satisfaisantes
+
+★ Suivi des Statistiques — Suivez vos victoires, défaites, matchs nuls et séries de victoires à tous les niveaux
+
+★ Fonctionne Hors Ligne — Pas d'internet requis. Pas de pubs. Pas d'achats intégrés. De la pure stratégie.
+
+★ Adaptatif pour Tous les Écrans — Conçu pour téléphones, tablettes et pliables. Gère correctement les encoches et découpes de caméra sur tous les appareils Android modernes.
+
+COMMENT JOUER
+
+1. Les joueurs placent à tour de rôle X ou O sur une grille 3×3
+2. Alignez 3 marques pour gagner (horizontal, vertical ou diagonal)
+3. En Mode Fantôme : quand vous posez votre 4ème marque, la plus ancienne disparaît
+4. Les marques s'estompent visuellement en vieillissant — pleine couleur → atténuée → fantomatique
+5. Anticipez : votre ligne gagnante pourrait disparaître avant que vous ne la complétiez !
+
+Ghost Tac Toe est le jeu rapide parfait pour les trajets, les salles d'attente, ou dès que vous avez 2 minutes et envie d'un défi cérébral satisfaisant.
+
+Pas de pubs. Pas de traçage. Pas de collecte de données. Juste un jeu de stratégie magnifiquement conçu.

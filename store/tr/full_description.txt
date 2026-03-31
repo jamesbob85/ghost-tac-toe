@@ -1,0 +1,40 @@
+XOX oyununda uzman olduğunu mu sanıyorsun? Bir daha düşün.
+
+Ghost Tac Toe, klasik oyunu her şeyi değiştiren basit bir kural değişikliğiyle yeniden icat ediyor: her oyuncu tahtada aynı anda yalnızca 3 işarete sahip olabilir. 4. işaretini koy ve en eski işaretin bir hayalet gibi kaybolsun. 👻
+
+Bu tek değişiklik beraberlikleri ortadan kaldırır, dramatik dönüşler yaratır ve tamamen yeni bir strateji gerektirir. Sadece engellemek yetmez — hangi işaretinin sırada kaybolacağını düşünmeli ve rakibinin kaybolan işaretlerini de hesaba katmalısın.
+
+🎮 ÖZELLİKLER
+
+★ Hayalet Modu — Temel mekanik. Oyuncu başına yalnızca 3 işaret. 4. işareti koyduğunda en eski işaretin solar ve kaybolur. İşaretlerin katıdan hayaletimsi hale gelişini izle, böylece neyin kaybolmak üzere olduğunu her zaman bil.
+
+★ Kaos Modu — Her turda rastgele bir hücre yıldırımla parlar. O hücre üzerinden kazan ve bonus puan al. Ekstra bir risk ve ödül katmanı.
+
+★ Akıllı Yapay Zeka — 3 Zorluk Seviyesi
+  • Kolay — Hayalet mekaniğini öğrenmek için mükemmel
+  • Orta — Galibiyetlerini engeller ve kendininkini arar
+  • Zor — Hayalet çıkarmalarını hesaba katan tam minimax yapay zeka
+
+★ Yerel 2 Oyunculu — Aynı cihazda bir arkadaşınla oyna
+
+★ Güzel Karanlık Tema — Derin uzay arka planında neon mor ve cyan işaretler. Yerleştirmede akıcı animasyonlar, dramatik solma efektleri ve animasyonlu kazanma çizgileri.
+
+★ Dokunsal Geri Bildirim — Her yerleştirmeyi, her kaybolmayı ve her zaferi tatmin edici titreşim desenleriyle hisset
+
+★ İstatistik Takibi — Tüm zorluk seviyelerinde galibiyetlerini, yenilgilerini, beraberliklerini ve galibiyet serilerini takip et
+
+★ Çevrimdışı Çalışır — İnternet gerekmez. Reklam yok. Uygulama içi satın alma yok. Saf strateji.
+
+★ Tüm Ekranlara Uyumlu — Telefonlar, tabletler ve katlanabilir cihazlar için tasarlandı. Tüm modern Android cihazlarda kamera kesikleri ve çentikleri düzgün şekilde işler.
+
+NASIL OYNANIR
+
+1. Oyuncular sırayla 3×3 ızgaraya X veya O yerleştirir
+2. Kazanmak için 3'ünü bir sıraya diz (yatay, dikey veya çapraz)
+3. Hayalet Modunda: 4. işaretini koyduğunda en eski işaretin kaybolur
+4. İşaretler yaşlandıkça görsel olarak solar — tam renk → soluk → hayaletimsi
+5. Önceden planla: kazanma çizgin tamamlamadan önce kaybolabilir!
+
+Ghost Tac Toe; yolculuklar, bekleme odaları veya 2 dakikan olup tatmin edici bir beyin mücadelesi istediğin anlar için mükemmel bir hızlı oyundur.
+
+Reklam yok. Takip yok. Veri toplama yok. Sadece güzelce tasarlanmış bir strateji oyunu.

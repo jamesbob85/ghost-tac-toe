@@ -1,0 +1,40 @@
+Acha que domina o Jogo da Velha? Pense de novo.
+
+Ghost Tac Toe reinventa o jogo clássico com uma mudança simples de regra que transforma tudo: cada jogador só pode ter 3 marcas no tabuleiro ao mesmo tempo. Coloque sua 4ª marca e a mais antiga desaparece como um fantasma. 👻
+
+Essa única reviravolta elimina empates, cria viradas dramáticas e exige uma estratégia completamente nova. Não basta bloquear — você precisa pensar em qual das suas marcas vai desaparecer primeiro e se antecipar às marcas fantasma do adversário.
+
+🎮 RECURSOS
+
+★ Modo Fantasma — A mecânica central. Apenas 3 marcas por jogador. Sua marca mais antiga desvanece quando você coloca a 4ª. Observe as marcas envelhecerem de sólidas a fantasmagóricas para sempre saber o que está prestes a desaparecer.
+
+★ Modo Caos — Uma célula aleatória brilha com raios a cada turno. Vença através dessa célula para ganhar pontos bônus. Uma camada extra de risco e recompensa.
+
+★ IA Inteligente com 3 Níveis de Dificuldade
+  • Fácil — Perfeito para aprender a mecânica fantasma
+  • Médio — Bloqueia suas vitórias e busca as próprias
+  • Difícil — IA minimax completa que planeja vários movimentos à frente, considerando as evicções fantasma
+
+★ 2 Jogadores Local — Jogue com um amigo no mesmo dispositivo
+
+★ Belo Tema Escuro — Marcas neon em roxo e ciano sobre um fundo de espaço profundo. Animações suaves na colocação, efeitos dramáticos de desvanecimento e linhas de vitória animadas.
+
+★ Feedback Háptico — Sinta cada marca, cada evicção fantasma e cada vitória com padrões hápticos satisfatórios
+
+★ Acompanhamento de Estatísticas — Acompanhe suas vitórias, derrotas, empates e sequências em todos os níveis de dificuldade
+
+★ Funciona Offline — Sem internet. Sem anúncios. Sem compras no app. Estratégia pura.
+
+★ Adaptável para Todas as Telas — Projetado para celulares, tablets e dobráveis. Compatível com recortes de câmera e entalhes em todos os dispositivos Android modernos.
+
+COMO JOGAR
+
+1. Os jogadores se revezam colocando X ou O em uma grade 3×3
+2. Consiga 3 em linha para vencer (horizontal, vertical ou diagonal)
+3. No Modo Fantasma: quando você coloca sua 4ª marca, a mais antiga desaparece
+4. As marcas desvanecem visualmente com a idade — cor total → opaca → fantasmagórica
+5. Planeje com antecedência: sua linha vencedora pode desaparecer antes de completá-la!
+
+Ghost Tac Toe é o jogo rápido perfeito para o transporte, salas de espera, ou sempre que você tiver 2 minutos e quiser um desafio mental satisfatório.
+
+Sem anúncios. Sem rastreamento. Sem coleta de dados. Apenas um jogo de estratégia lindamente criado.
