@@ -45,8 +45,6 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const [mode, setMode] = useState<GameMode>('ai');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
-  const [ghostMode, setGhostMode] = useState(true);
-  const [chaosMode, setChaosMode] = useState(false);
 
   const contentWidth = Math.min(layout.contentMaxWidth, 560);
 
@@ -78,7 +76,7 @@ export default function HomeScreen() {
   const handlePlay = () => {
     router.push({
       pathname: '/game',
-      params: { mode, difficulty, ghostMode: ghostMode ? '1' : '0', chaosMode: chaosMode ? '1' : '0' },
+      params: { mode, difficulty, modifiers: 'ghost_eviction' },
     });
   };
 
@@ -151,27 +149,6 @@ export default function HomeScreen() {
             </View>
           </Section>
         )}
-
-        {/* ─── TWISTS ───────────────────────────────────────── */}
-        <Section eyebrow={`${mode === 'ai' ? 'III' : 'II'}.  TWISTS OF FATE`}>
-          <View style={styles.toggleCard}>
-            <ToggleRow
-              ornament="❦"
-              title="Ghost Mode"
-              description="Three marks per duellist; the oldest vanishes upon the fourth."
-              value={ghostMode}
-              onToggle={setGhostMode}
-            />
-            <View style={styles.toggleDivider} />
-            <ToggleRow
-              ornament="✶"
-              title="Chaos Cell"
-              description="A glowing tile each turn; winning through it grants double victory."
-              value={chaosMode}
-              onToggle={setChaosMode}
-            />
-          </View>
-        </Section>
 
         {/* ─── PLAY ─────────────────────────────────────────── */}
         <View style={styles.playSection}>
@@ -295,39 +272,6 @@ function DifficultyTile({
       <Text style={[styles.diffLabel, isActive && styles.diffLabelActive]}>{label}</Text>
       <Text style={styles.diffDescriptor}>{descriptor}</Text>
     </AnimatedTouchable>
-  );
-}
-
-function ToggleRow({
-  ornament,
-  title,
-  description,
-  value,
-  onToggle,
-}: {
-  ornament: string;
-  title: string;
-  description: string;
-  value: boolean;
-  onToggle: (v: boolean) => void;
-}) {
-  return (
-    <TouchableOpacity
-      style={styles.toggleRow}
-      onPress={() => onToggle(!value)}
-      activeOpacity={0.7}
-    >
-      <Text style={styles.toggleOrnament}>{ornament}</Text>
-      <View style={styles.toggleInfo}>
-        <Text style={styles.toggleTitle}>{title}</Text>
-        <Text style={styles.toggleDesc}>{description}</Text>
-      </View>
-      <View style={[styles.toggleBox, value && styles.toggleBoxOn]}>
-        <Text style={[styles.toggleCheck, value && styles.toggleCheckOn]}>
-          {value ? '✓' : ''}
-        </Text>
-      </View>
-    </TouchableOpacity>
   );
 }
 

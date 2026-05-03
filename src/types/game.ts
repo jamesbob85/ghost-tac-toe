@@ -23,18 +23,19 @@ export interface GameState {
   currentPlayer: Player;
   phase: GamePhase;
   winner: Player | null;
-  winLine: number[] | null; // cell indices of winning cells
+  winLine: number[] | null;
   turnNumber: number;
-  chaosCell: number | null; // for Chaos Mode bonus
-  ghostMode: boolean;
-  chaosMode: boolean;
+  /** Active modifier ids — each owns a slice of state below. */
+  modifiers: string[];
+  /** Per-modifier state, keyed by modifier id. */
+  modifierState: Record<string, unknown>;
 }
 
 export interface GameSettings {
   mode: GameMode;
   difficulty: Difficulty;
-  ghostMode: boolean;
-  chaosMode: boolean;
+  /** Modifier ids active for this match (empty = vanilla tic-tac-toe). */
+  modifiers: string[];
 }
 
 export interface AppStats {

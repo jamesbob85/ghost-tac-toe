@@ -13,14 +13,14 @@ function gameReducer(state: GameState, action: Action): GameState {
       return applyMove(state, action.cellIndex);
     case 'RESET_GAME':
       return {
-        ...createInitialState(state.ghostMode, state.chaosMode),
+        ...createInitialState(state.modifiers),
         players: {
           X: { marks: [], score: state.players.X.score },
           O: { marks: [], score: state.players.O.score },
         },
       };
     case 'RESET_SCORES':
-      return resetScores(createInitialState(state.ghostMode, state.chaosMode));
+      return resetScores(createInitialState(state.modifiers));
     default:
       return state;
   }
@@ -30,7 +30,7 @@ export function useGameState(settings: GameSettings) {
   const [state, dispatch] = useReducer(
     gameReducer,
     null,
-    () => createInitialState(settings.ghostMode, settings.chaosMode),
+    () => createInitialState(settings.modifiers),
   );
 
   const makeMove = useCallback((cellIndex: number) => {

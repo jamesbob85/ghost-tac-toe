@@ -23,7 +23,10 @@ export function Board({
   focusedCell = null,
   onTouchInteraction,
 }: BoardProps) {
-  const { board, players, winLine, chaosCell, currentPlayer, phase, ghostMode } = state;
+  const { board, players, winLine, currentPlayer, phase, modifiers, modifierState } = state;
+
+  const ghostActive = modifiers.includes('ghost_eviction');
+  const chaosCell = (modifierState['chaos_cell'] as { cell: number | null } | undefined)?.cell ?? null;
 
   const markAgeMap = new Map<number, number>();
   (['X', 'O'] as Player[]).forEach((p) => {
@@ -34,7 +37,7 @@ export function Board({
 
   const currentPlayerMarks = players[currentPlayer].marks;
   const evictingIndex =
-    ghostMode && currentPlayerMarks.length >= MAX_MARKS
+    ghostActive && currentPlayerMarks.length >= MAX_MARKS
       ? currentPlayerMarks[0].index
       : null;
 
@@ -54,7 +57,7 @@ export function Board({
                       key={index}
                       index={index}
                       value={cell}
-                      markAge={cell !== null && ghostMode ? (markAgeMap.get(index) ?? null) : null}
+                      markAge={cell !== null && ghostActive ? (markAgeMap.get(index) ?? null) : null}
                       isWinCell={winLine ? winLine.includes(index) : false}
                       isChaosCell={chaosCell === index}
                       isEvicting={evictingIndex === index}

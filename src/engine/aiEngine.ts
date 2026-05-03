@@ -1,62 +1,59 @@
 import { GameState, Player, Board, Difficulty } from '../types/game';
-import { applyMove, getEmptyCells } from './gameEngine';
+import { applyMove, getEmptyCells, getLegalMoves } from './gameEngine';
+import { resolveModifiers } from './modifiers/registry';
+import { findInCategory } from './modifiers/types';
+import { checkWin as defaultCheckWin } from './winDetector';
 
 /**
- * Returns the best cell index for the AI to play.
- * The AI always plays as 'O'.
+ * Returns the best cell for the AI (always plays as 'O' in the live game).
+ * Modifier-aware: respects custom win-conditions and topology restrictions
+ * via the active modifier list on `state`.
  */
 export function getBestMove(state: GameState, difficulty: Difficulty): number {
-  const emptyCells = getEmptyCells(state.board);
-  if (emptyCells.length === 0) return -1;
+  const empties = getLegalMoves(state);
+  if (empties.length === 0) return -1;
 
   switch (difficulty) {
     case 'easy':
-      return getRandomMove(emptyCells);
+      return getRandomMove(empties);
     case 'medium':
-      return getMediumMove(state, emptyCells);
+      return getMediumMove(state, empties);
     case 'hard':
-      return getHardMove(state, emptyCells);
+      return getHardMove(state, empties);
     default:
-      return getRandomMove(emptyCells);
+      return getRandomMove(empties);
   }
 }
 
-// ─── Easy: Random ─────────────────────────────────────────────────────────────
-
-function getRandomMove(emptyCells: number[]): number {
-  return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+function getRandomMove(empties: number[]): number {
+  return empties[Math.floor(Math.random() * empties.length)];
 }
 
-// ─── Medium: Win/Block/Random ─────────────────────────────────────────────────
-
-function getMediumMove(state: GameState, emptyCells: number[]): number {
-  // 1. Can AI ('O') win in one move?
-  for (const cell of emptyCells) {
+function getMediumMove(state: GameState, empties: number[]): number {
+  // 1. Take an immediate win
+  for (const cell of empties) {
     const next = applyMove(state, cell);
     if (next.winner === 'O') return cell;
   }
 
-  // 2. Must AI block player ('X') from winning?
-  // Use applyMove with currentPlayer swapped to X so ghost eviction is respected
-  const xTurnState = { ...state, currentPlayer: 'X' as const };
-  for (const cell of emptyCells) {
-    const next = applyMove(xTurnState, cell);
+  // 2. Block opponent's immediate win — flip currentPlayer to X then test
+  const oppTurn: GameState = { ...state, currentPlayer: 'X' };
+  for (const cell of empties) {
+    const next = applyMove(oppTurn, cell);
     if (next.winner === 'X') return cell;
   }
 
-  // 3. Prefer center, then corners, then edges
-  return getStrategicMove(emptyCells);
+  // 3. Strategic — center > corners > edges (from the legal-moves set)
+  return getStrategicMove(empties);
 }
-
-// ─── Hard: Ghost-Aware Minimax ────────────────────────────────────────────────
 
 const MINIMAX_DEPTH = 6;
 
-function getHardMove(state: GameState, emptyCells: number[]): number {
+function getHardMove(state: GameState, empties: number[]): number {
   let bestScore = -Infinity;
-  let bestMove = emptyCells[0];
+  let bestMove = empties[0];
 
-  for (const cell of emptyCells) {
+  for (const cell of empties) {
     const next = applyMove(state, cell);
     const score = minimax(next, MINIMAX_DEPTH, false, -Infinity, Infinity);
     if (score > bestScore) {
@@ -64,14 +61,9 @@ function getHardMove(state: GameState, emptyCells: number[]): number {
       bestMove = cell;
     }
   }
-
   return bestMove;
 }
 
-/**
- * Minimax with alpha-beta pruning.
- * isMaximizing = true means it's 'O' (AI) turn.
- */
 function minimax(
   state: GameState,
   depth: number,
@@ -79,51 +71,50 @@ function minimax(
   alpha: number,
   beta: number,
 ): number {
-  // Terminal states
-  if (state.phase === 'won') {
-    return state.winner === 'O' ? 10 + depth : -(10 + depth);
-  }
+  if (state.phase === 'won') return state.winner === 'O' ? 100 + depth : -(100 + depth);
   if (state.phase === 'draw') return 0;
-  if (depth === 0) return evaluateBoard(state.board);
+  if (depth === 0) return evaluateBoard(state);
 
-  const emptyCells = getEmptyCells(state.board);
-  if (emptyCells.length === 0) return evaluateBoard(state.board);
+  const empties = getLegalMoves(state);
+  if (empties.length === 0) return evaluateBoard(state);
 
   if (isMaximizing) {
-    let maxScore = -Infinity;
-    for (const cell of emptyCells) {
-      const next = applyMove(state, cell);
+    let best = -Infinity;
+    for (const c of empties) {
+      const next = applyMove(state, c);
       const score = minimax(next, depth - 1, false, alpha, beta);
-      maxScore = Math.max(maxScore, score);
-      alpha = Math.max(alpha, score);
-      if (beta <= alpha) break; // alpha-beta pruning
-    }
-    return maxScore;
-  } else {
-    let minScore = Infinity;
-    for (const cell of emptyCells) {
-      const next = applyMove(state, cell);
-      const score = minimax(next, depth - 1, true, alpha, beta);
-      minScore = Math.min(minScore, score);
-      beta = Math.min(beta, score);
+      if (score > best) best = score;
+      if (best > alpha) alpha = best;
       if (beta <= alpha) break;
     }
-    return minScore;
+    return best;
+  } else {
+    let best = Infinity;
+    for (const c of empties) {
+      const next = applyMove(state, c);
+      const score = minimax(next, depth - 1, true, alpha, beta);
+      if (score < best) best = score;
+      if (best < beta) beta = best;
+      if (beta <= alpha) break;
+    }
+    return best;
   }
 }
 
 /**
- * Simple heuristic for non-terminal boards at max depth.
- * Counts lines where O has advantage.
+ * Heuristic — counts line ownership from O's perspective.
+ * Modifier-aware: if an active winCondition modifier exists, defer to its
+ * checkWin only as a terminal indicator (we can't easily score partial misère
+ * boards generically, so we fall back to the standard line-count heuristic).
  */
-function evaluateBoard(board: Board): number {
+function evaluateBoard(state: GameState): number {
+  const board: Board = state.board;
   let score = 0;
   const lines: [number, number, number][] = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
     [0, 3, 6], [1, 4, 7], [2, 5, 8],
     [0, 4, 8], [2, 4, 6],
   ];
-
   for (const [a, b, c] of lines) {
     const cells = [board[a], board[b], board[c]];
     const oCount = cells.filter((v) => v === 'O').length;
@@ -131,22 +122,19 @@ function evaluateBoard(board: Board): number {
     if (xCount === 0) score += oCount;
     if (oCount === 0) score -= xCount;
   }
-
   return score;
 }
 
-/** Prefer center > corners > edges */
-function getStrategicMove(emptyCells: number[]): number {
+function getStrategicMove(empties: number[]): number {
   const center = [4];
   const corners = [0, 2, 6, 8];
   const edges = [1, 3, 5, 7];
-
-  for (const preferred of [center, corners, edges]) {
-    const available = preferred.filter((i) => emptyCells.includes(i));
-    if (available.length > 0) {
-      return available[Math.floor(Math.random() * available.length)];
-    }
+  for (const tier of [center, corners, edges]) {
+    const avail = tier.filter((i) => empties.includes(i));
+    if (avail.length > 0) return avail[Math.floor(Math.random() * avail.length)];
   }
-
-  return emptyCells[0];
+  return empties[0];
 }
+
+// Suppress unused-import warnings until we use these for win-condition reads
+const _unused = { getEmptyCells, resolveModifiers, findInCategory, defaultCheckWin };

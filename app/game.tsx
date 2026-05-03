@@ -37,16 +37,21 @@ export default function GameScreen() {
   const params = useLocalSearchParams<{
     mode: string;
     difficulty: string;
-    ghostMode: string;
-    chaosMode: string;
+    modifiers: string;
   }>();
+
+  const modifierIds = params.modifiers
+    ? params.modifiers.split(',').filter(Boolean)
+    : ['ghost_eviction'];
 
   const settings: GameSettings = {
     mode: (params.mode ?? 'ai') as GameMode,
     difficulty: (params.difficulty ?? 'medium') as Difficulty,
-    ghostMode: params.ghostMode === '1',
-    chaosMode: params.chaosMode === '1',
+    modifiers: modifierIds,
   };
+
+  const ghostActive = modifierIds.includes('ghost_eviction');
+  const chaosActive = modifierIds.includes('chaos_cell');
 
   const { state, makeMove, resetGame } = useGameState(settings);
   const haptics = useHaptics();
@@ -171,8 +176,8 @@ export default function GameScreen() {
         <Text style={styles.headerSub}>DUEL IN PROGRESS</Text>
       </View>
       <View style={styles.headerBadges}>
-        {settings.ghostMode && <Text style={styles.modeBadge}>❦ Ghost</Text>}
-        {settings.chaosMode && <Text style={styles.modeBadge}>✶ Chaos</Text>}
+        {ghostActive && <Text style={styles.modeBadge}>❦ Ghost</Text>}
+        {chaosActive && <Text style={styles.modeBadge}>✶ Chaos</Text>}
       </View>
     </View>
   );
@@ -219,7 +224,7 @@ export default function GameScreen() {
     </View>
   );
 
-  const ghostQueue = settings.ghostMode ? (
+  const ghostQueue = ghostActive ? (
     <View style={styles.queueRow}>
       <GhostQueue
         player={state.currentPlayer}
