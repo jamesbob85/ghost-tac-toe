@@ -36,9 +36,55 @@ export const VARIANTS: Record<string, Variant> = {
       maxTurns: 60,
     },
   },
+  // ─── Phase 1: marks-category alternatives ───────────────────────
+  quick_ink: {
+    id: 'quick_ink',
+    name: 'Quick Ink',
+    description: 'Marks queue size 2 (FIFO eviction every other turn).',
+    matchOptions: {
+      modifiers: ['quick_ink'],
+      maxTurns: 60,
+    },
+  },
+  slow_ink: {
+    id: 'slow_ink',
+    name: 'Slow Ink',
+    description: 'Marks queue size 4 (more crowded board).',
+    matchOptions: {
+      modifiers: ['slow_ink'],
+      maxTurns: 60,
+    },
+  },
+  inverted: {
+    id: 'inverted',
+    name: 'Inverted Possession',
+    description: 'Eviction takes the newest mark instead of the oldest.',
+    matchOptions: {
+      modifiers: ['inverted_possession'],
+      maxTurns: 60,
+    },
+  },
+  mirror: {
+    id: 'mirror',
+    name: 'Mirror',
+    description: 'Each placement also stamps the diagonally opposite cell.',
+    matchOptions: {
+      modifiers: ['mirror'],
+      maxTurns: 60,
+    },
+  },
 };
 
 export const PHASE_0_VARIANTS: Variant[] = [
   VARIANTS.vanilla_ttt,
   VARIANTS.ghost_only,
+];
+
+/** Phase 1 batch: ghost baseline + 4 marks-category alternatives */
+export const PHASE_1_MARKS_VARIANTS: Variant[] = [
+  VARIANTS.ghost_only,
+  VARIANTS.quick_ink,
+  VARIANTS.slow_ink,
+  VARIANTS.inverted,
+  VARIANTS.mirror,
 ];

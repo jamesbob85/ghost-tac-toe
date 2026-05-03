@@ -74,13 +74,13 @@ export function PlayerBadge({ player, score, isActive, label }: PlayerBadgeProps
       ]}
     >
       <View style={styles.eyebrowRow}>
-        <Text style={[styles.eyebrow, { color: inkColor }]}>
-          STAMP {player}
+        <Text style={[styles.eyebrow, { color: inkColor }]} numberOfLines={1}>
+          {label}
         </Text>
         <Animated.Text style={[styles.cursor, { color: inkColor }, cursorStyle]}>▍</Animated.Text>
       </View>
       <Text style={[styles.name, { color: COLORS.textPrimary }]} numberOfLines={1}>
-        {label}
+        {player === 'X' ? 'duellist' : 'apparition'}
       </Text>
       <View style={styles.divider} />
       <View style={styles.scoreRow}>

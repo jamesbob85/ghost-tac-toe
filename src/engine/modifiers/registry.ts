@@ -1,11 +1,19 @@
 import { Modifier } from './types';
 import { GhostEviction } from './ghostEviction';
 import { ChaosCell } from './chaosCell';
+import { QuickInk } from './quickInk';
+import { SlowInk } from './slowInk';
+import { InvertedPossession } from './invertedPossession';
+import { Mirror } from './mirror';
 
 /** All known modifiers, keyed by id. The simulation and engine consult this. */
 export const MODIFIER_REGISTRY: Record<string, Modifier> = {
   [GhostEviction.id]: GhostEviction,
   [ChaosCell.id]: ChaosCell,
+  [QuickInk.id]: QuickInk,
+  [SlowInk.id]: SlowInk,
+  [InvertedPossession.id]: InvertedPossession,
+  [Mirror.id]: Mirror,
 };
 
 /** Convert ids → Modifier objects. Throws if any id is unknown. */
@@ -20,4 +28,4 @@ export function resolveModifiers(ids: string[]): Modifier[] {
 /** Default modifier set for the live game (until daily editions take over). */
 export const CLASSIC_MODIFIERS = [GhostEviction.id];
 
-export { GhostEviction, ChaosCell };
+export { GhostEviction, ChaosCell, QuickInk, SlowInk, InvertedPossession, Mirror };

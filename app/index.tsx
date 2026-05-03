@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,25 +12,19 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-  withSpring,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useTranslation } from 'react-i18next';
 import {
   COLORS,
   FONTS,
   FONT_SIZES,
   SPACING,
-  SPRING,
   BORDERS,
-  PAPER_SHADOW,
 } from '../src/constants/theme';
 import { Button } from '../src/components/ui/Button';
-import { Difficulty, GameMode } from '../src/types/game';
 import { useLayout } from '../src/hooks/useLayout';
-
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+import { getTodaysGhost } from '../src/daily/ghosts';
 
 const ISSUE_DATE = new Date().toLocaleDateString('en-US', {
   weekday: 'long',
@@ -42,9 +36,7 @@ const ISSUE_DATE = new Date().toLocaleDateString('en-US', {
 export default function HomeScreen() {
   const router = useRouter();
   const layout = useLayout();
-  const { t } = useTranslation();
-  const [mode, setMode] = useState<GameMode>('ai');
-  const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+  const ghost = getTodaysGhost();
 
   const contentWidth = Math.min(layout.contentMaxWidth, 560);
 
@@ -76,11 +68,9 @@ export default function HomeScreen() {
   const handlePlay = () => {
     router.push({
       pathname: '/game',
-      params: { mode, difficulty, modifiers: 'ghost_eviction' },
+      params: { ghost: ghost.id, modifiers: 'ghost_eviction' },
     });
   };
-
-  const difficultyLabel = (d: Difficulty) => t(`home.${d}`);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
@@ -107,50 +97,23 @@ export default function HomeScreen() {
 
           <View style={styles.singleRule} />
           <View style={styles.doubleRule} />
-
-          <Text style={styles.deck}>
-            A divination of <Text style={styles.deckEmph}>Tic-Tac-Toe</Text> wherein each duellist may keep but three marks aboard the page; the eldest fades, vanishes, and returns to the æther.
-          </Text>
         </View>
 
-        {/* ─── OPPONENT ─────────────────────────────────────── */}
-        <Section eyebrow="I.  CHOOSE THINE OPPONENT">
-          <View style={styles.choices}>
-            <ChoiceTile
-              ornament="✕"
-              title={t('home.vsAI')}
-              subtitle="Match wits with the apparition"
-              isActive={mode === 'ai'}
-              onPress={() => setMode('ai')}
-            />
-            <ChoiceTile
-              ornament="◯"
-              title={t('home.vsFriend')}
-              subtitle="Pass the page betwixt mortals"
-              isActive={mode === 'friend'}
-              onPress={() => setMode('friend')}
-            />
-          </View>
-        </Section>
+        {/* ─── TODAY'S HAUNTING ─────────────────────────────── */}
+        <View style={styles.eyebrowRow}>
+          <View style={styles.eyebrowRule} />
+          <Text style={styles.eyebrow}>TODAY’S HAUNTING</Text>
+          <View style={styles.eyebrowRule} />
+        </View>
 
-        {/* ─── DIFFICULTY ───────────────────────────────────── */}
-        {mode === 'ai' && (
-          <Section eyebrow="II.  CALIBRE OF THE SPECTRE">
-            <View style={styles.difficultyRow}>
-              {(['easy', 'medium', 'hard'] as Difficulty[]).map((d) => (
-                <DifficultyTile
-                  key={d}
-                  difficulty={d}
-                  label={difficultyLabel(d)}
-                  isActive={difficulty === d}
-                  onPress={() => setDifficulty(d)}
-                />
-              ))}
-            </View>
-          </Section>
-        )}
+        <View style={styles.ghostCard}>
+          <Text style={styles.ghostName}>{ghost.name}</Text>
+          <Text style={styles.ghostEpithet}>“{ghost.epithet}”</Text>
+          <Text style={styles.ornament}>❦</Text>
+          <Text style={styles.ghostFlavor}>{ghost.flavor}</Text>
+        </View>
 
-        {/* ─── PLAY ─────────────────────────────────────────── */}
+        {/* ─── BEGIN ────────────────────────────────────────── */}
         <View style={styles.playSection}>
           <Button
             label="Begin the Séance"
@@ -158,6 +121,9 @@ export default function HomeScreen() {
             variant="primary"
             fullWidth
           />
+          <Text style={styles.playCaption}>
+            One match. Banish the ghost or be banished.
+          </Text>
         </View>
 
         {/* ─── FOOTER ───────────────────────────────────────── */}
@@ -167,14 +133,14 @@ export default function HomeScreen() {
             <FooterLink
               ornament="✪"
               label="Registry"
-              caption="Records of past duels"
+              caption="Past hauntings"
               onPress={() => router.push('/scores')}
             />
             <Text style={styles.footerDivider}>·</Text>
             <FooterLink
               ornament="⚙"
               label="Provisions"
-              caption="Audio, language, &c."
+              caption="Audio & language"
               onPress={() => router.push('/settings')}
             />
           </View>
@@ -184,94 +150,6 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-// ─── Sub-components ──────────────────────────────────────────────────
-
-function Section({ eyebrow, children }: { eyebrow: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.section}>
-      <View style={styles.eyebrowRow}>
-        <View style={styles.eyebrowRule} />
-        <Text style={styles.eyebrow}>{eyebrow}</Text>
-        <View style={styles.eyebrowRule} />
-      </View>
-      {children}
-    </View>
-  );
-}
-
-function ChoiceTile({
-  ornament,
-  title,
-  subtitle,
-  isActive,
-  onPress,
-}: {
-  ornament: string;
-  title: string;
-  subtitle: string;
-  isActive: boolean;
-  onPress: () => void;
-}) {
-  const tap = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: tap.value }] }));
-  return (
-    <AnimatedTouchable
-      style={[
-        styles.choiceTile,
-        isActive && styles.choiceTileActive,
-        isActive && PAPER_SHADOW,
-        animStyle,
-      ]}
-      onPress={onPress}
-      onPressIn={() => { tap.value = withTiming(0.97, { duration: 80 }); }}
-      onPressOut={() => { tap.value = withSpring(1, SPRING.snappy); }}
-      activeOpacity={1}
-    >
-      <Text style={[styles.choiceOrnament, isActive && styles.choiceOrnamentActive]}>
-        {ornament}
-      </Text>
-      <Text style={[styles.choiceTitle, isActive && styles.choiceTitleActive]}>
-        {title}
-      </Text>
-      <Text style={styles.choiceSubtitle}>{subtitle}</Text>
-    </AnimatedTouchable>
-  );
-}
-
-function DifficultyTile({
-  difficulty,
-  label,
-  isActive,
-  onPress,
-}: {
-  difficulty: Difficulty;
-  label: string;
-  isActive: boolean;
-  onPress: () => void;
-}) {
-  const tap = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: tap.value }] }));
-  const { stars, descriptor } = DIFF_META[difficulty];
-
-  return (
-    <AnimatedTouchable
-      style={[
-        styles.diffTile,
-        isActive && styles.diffTileActive,
-        animStyle,
-      ]}
-      onPress={onPress}
-      onPressIn={() => { tap.value = withTiming(0.96, { duration: 80 }); }}
-      onPressOut={() => { tap.value = withSpring(1, SPRING.snappy); }}
-      activeOpacity={1}
-    >
-      <Text style={[styles.diffStars, isActive && styles.diffStarsActive]}>{stars}</Text>
-      <Text style={[styles.diffLabel, isActive && styles.diffLabelActive]}>{label}</Text>
-      <Text style={styles.diffDescriptor}>{descriptor}</Text>
-    </AnimatedTouchable>
   );
 }
 
@@ -295,20 +173,9 @@ function FooterLink({
   );
 }
 
-const DIFF_META: Record<Difficulty, { stars: string; descriptor: string }> = {
-  easy:   { stars: '✶ ✶',     descriptor: 'A novice spirit' },
-  medium: { stars: '✶ ✶ ✶',   descriptor: 'A keen apparition' },
-  hard:   { stars: '✶ ✶ ✶ ✶', descriptor: 'A vengeful poltergeist' },
-};
-
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  scroll: {
-    flex: 1,
-  },
+  safe: { flex: 1, backgroundColor: 'transparent' },
+  scroll: { flex: 1 },
   container: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.lg,
@@ -316,7 +183,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 
-  // ─── Masthead ────────────────────────────────────────────
+  // Masthead
   masthead: {
     alignItems: 'center',
     marginBottom: SPACING.xl,
@@ -373,24 +240,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: SPACING.sm,
   },
-  deck: {
-    fontFamily: FONTS.body,
-    fontSize: FONT_SIZES.md,
-    lineHeight: FONT_SIZES.md * 1.55,
-    color: COLORS.textPrimary,
-    textAlign: 'center',
-    marginTop: SPACING.md,
-    paddingHorizontal: SPACING.sm,
-  },
-  deckEmph: {
-    fontWeight: '700',
-    fontStyle: 'italic',
-  },
 
-  // ─── Section ─────────────────────────────────────────────
-  section: {
-    marginBottom: SPACING.lg,
-  },
+  // Eyebrow
   eyebrowRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -410,171 +261,61 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
-  // ─── Choices (mode tiles) ────────────────────────────────
-  choices: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  choiceTile: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    borderWidth: BORDERS.hairline,
-    borderColor: COLORS.border,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.sm,
+  // Ghost card
+  ghostCard: {
     alignItems: 'center',
-  },
-  choiceTileActive: {
-    borderWidth: BORDERS.rule,
-    borderColor: COLORS.rule,
-    backgroundColor: COLORS.surfaceBright,
-  },
-  choiceOrnament: {
-    fontFamily: FONTS.display,
-    fontSize: FONT_SIZES['2xl'],
-    color: COLORS.textMuted,
-    marginBottom: 4,
-  },
-  choiceOrnamentActive: {
-    color: COLORS.playerX,
-  },
-  choiceTitle: {
-    fontFamily: FONTS.display,
-    fontSize: FONT_SIZES.lg,
-    color: COLORS.textSecondary,
-    letterSpacing: 0.5,
-  },
-  choiceTitleActive: {
-    color: COLORS.textPrimary,
-  },
-  choiceSubtitle: {
-    fontFamily: FONTS.body,
-    fontStyle: 'italic',
-    fontSize: FONT_SIZES.xs + 1,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-
-  // ─── Difficulty ──────────────────────────────────────────
-  difficultyRow: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  diffTile: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    borderWidth: BORDERS.hairline,
-    borderColor: COLORS.border,
-    paddingVertical: SPACING.sm + 2,
-    paddingHorizontal: SPACING.xs,
-    alignItems: 'center',
-  },
-  diffTileActive: {
-    borderWidth: BORDERS.rule,
-    borderColor: COLORS.rule,
-    backgroundColor: COLORS.surfaceBright,
-  },
-  diffStars: {
-    fontFamily: FONTS.display,
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textMuted,
-    letterSpacing: 1.5,
-    marginBottom: 2,
-  },
-  diffStarsActive: {
-    color: COLORS.textBrass,
-  },
-  diffLabel: {
-    fontFamily: FONTS.display,
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  diffLabelActive: {
-    color: COLORS.textPrimary,
-  },
-  diffDescriptor: {
-    fontFamily: FONTS.body,
-    fontStyle: 'italic',
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    marginTop: 1,
-  },
-
-  // ─── Toggles ─────────────────────────────────────────────
-  toggleCard: {
-    backgroundColor: COLORS.background,
-    borderWidth: BORDERS.hairline,
-    borderColor: COLORS.border,
+    paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.md,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: SPACING.sm + 2,
-    gap: SPACING.md,
-  },
-  toggleOrnament: {
-    fontFamily: FONTS.display,
-    fontSize: FONT_SIZES.lg,
-    color: COLORS.textBrass,
-    width: 24,
-    textAlign: 'center',
-  },
-  toggleInfo: {
-    flex: 1,
-  },
-  toggleTitle: {
-    fontFamily: FONTS.display,
-    fontSize: FONT_SIZES.md + 2,
-    color: COLORS.textPrimary,
-    letterSpacing: 0.3,
-  },
-  toggleDesc: {
-    fontFamily: FONTS.body,
-    fontSize: FONT_SIZES.xs + 1,
-    color: COLORS.textSecondary,
-    fontStyle: 'italic',
-    lineHeight: 17,
-    marginTop: 1,
-  },
-  toggleBox: {
-    width: 26,
-    height: 26,
-    borderWidth: BORDERS.rule,
+    borderWidth: BORDERS.hairline,
     borderColor: COLORS.rule,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toggleBoxOn: {
-    backgroundColor: COLORS.playerX,
-    borderColor: COLORS.playerX,
-  },
-  toggleCheck: {
-    fontFamily: FONTS.display,
-    fontSize: FONT_SIZES.md,
-    color: 'transparent',
-    lineHeight: FONT_SIZES.md,
-  },
-  toggleCheckOn: {
-    color: COLORS.background,
-  },
-  toggleDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-  },
-
-  // ─── Play button ─────────────────────────────────────────
-  playSection: {
-    marginTop: SPACING.md,
     marginBottom: SPACING.lg,
   },
+  ghostName: {
+    fontFamily: FONTS.display,
+    fontSize: FONT_SIZES['2xl'],
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    lineHeight: FONT_SIZES['2xl'] * 1.1,
+  },
+  ghostEpithet: {
+    fontFamily: FONTS.body,
+    fontStyle: 'italic',
+    fontSize: FONT_SIZES.md + 2,
+    color: COLORS.playerO,
+    textAlign: 'center',
+    marginTop: SPACING.sm,
+  },
+  ornament: {
+    fontFamily: FONTS.display,
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.textBrass,
+    marginVertical: SPACING.sm,
+  },
+  ghostFlavor: {
+    fontFamily: FONTS.body,
+    fontSize: FONT_SIZES.md,
+    lineHeight: FONT_SIZES.md * 1.55,
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+    paddingHorizontal: SPACING.sm,
+  },
 
-  // ─── Footer ──────────────────────────────────────────────
+  // Play
+  playSection: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.lg,
+  },
+  playCaption: {
+    fontFamily: FONTS.body,
+    fontStyle: 'italic',
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    marginTop: SPACING.sm,
+  },
+
+  // Footer
   footer: {
     alignItems: 'center',
     marginTop: SPACING.lg,

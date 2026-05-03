@@ -28,6 +28,7 @@ import { PlayerBadge } from '../src/components/game/PlayerBadge';
 import { GhostQueue } from '../src/components/game/GhostQueue';
 import { GameOverModal } from '../src/components/ui/Modal';
 import { recordGameResult } from '../src/store/statsStore';
+import { getGhostById, getTodaysGhost } from '../src/daily/ghosts';
 
 export default function GameScreen() {
   const router = useRouter();
@@ -35,8 +36,7 @@ export default function GameScreen() {
   const { t } = useTranslation();
   const backArrow = I18nManager.isRTL ? '→' : '←';
   const params = useLocalSearchParams<{
-    mode: string;
-    difficulty: string;
+    ghost: string;
     modifiers: string;
   }>();
 
@@ -44,9 +44,11 @@ export default function GameScreen() {
     ? params.modifiers.split(',').filter(Boolean)
     : ['ghost_eviction'];
 
+  const ghost = (params.ghost && getGhostById(params.ghost)) || getTodaysGhost();
+
   const settings: GameSettings = {
-    mode: (params.mode ?? 'ai') as GameMode,
-    difficulty: (params.difficulty ?? 'medium') as Difficulty,
+    mode: 'ai',
+    difficulty: ghost.difficulty,
     modifiers: modifierIds,
   };
 
@@ -68,20 +70,19 @@ export default function GameScreen() {
   const soundRef = useRef(sound);
   soundRef.current = sound;
 
-  const isAIMode = settings.mode === 'ai';
-  const isAIThinking = isAIMode && state.currentPlayer === 'O' && state.phase === 'playing';
-  const isDisabled = isAIThinking || state.phase !== 'playing';
+  const isGhostThinking = state.currentPlayer === 'O' && state.phase === 'playing';
+  const isDisabled = isGhostThinking || state.phase !== 'playing';
 
   const handleCellPress = useCallback(
     (index: number) => {
       if (state.phase !== 'playing') return;
-      if (isAIMode && state.currentPlayer === 'O') return;
+      if (state.currentPlayer === 'O') return;
 
       makeMoveRef.current(index);
       hapticsRef.current.placeMark();
       soundRef.current.play('place');
     },
-    [state.phase, state.currentPlayer, isAIMode],
+    [state.phase, state.currentPlayer],
   );
 
   const handleAIMove = useCallback((index: number) => {
@@ -117,7 +118,7 @@ export default function GameScreen() {
     haptics.loadEnabled();
   }, []);
 
-  useAI(state, isAIMode, settings.difficulty, handleAIMove);
+  useAI(state, true, settings.difficulty, handleAIMove);
 
   useEffect(() => {
     if (state.phase !== 'playing' && prevPhaseRef.current === 'playing') {
@@ -148,20 +149,16 @@ export default function GameScreen() {
     router.back();
   };
 
-  const getPlayerLabel = (player: 'X' | 'O') => {
-    if (isAIMode) return player === 'X' ? t('game.you') : t('game.ai');
-    return player === 'X' ? t('game.playerX') : t('game.playerO');
-  };
+  const getPlayerLabel = (player: 'X' | 'O') =>
+    player === 'X' ? 'You' : ghost.name;
 
   const getTurnText = () => {
     if (state.phase === 'won') {
-      if (isAIMode) return state.winner === 'X' ? t('game.youWon') : t('game.aiWins');
-      return t('game.playerWins', { player: state.winner });
+      return state.winner === 'X' ? `You banished ${ghost.name}.` : `${ghost.name} prevails.`;
     }
-    if (state.phase === 'draw') return t('game.draw');
-    if (isAIThinking) return 'The spectre considers…';
-    if (isAIMode) return 'Your stamp awaits';
-    return `Stamp ${state.currentPlayer} to play`;
+    if (state.phase === 'draw') return 'An unresolved matter.';
+    if (isGhostThinking) return `${ghost.name} considers…`;
+    return 'Your move.';
   };
 
   const { isLandscape, boardSize } = layout;
@@ -172,11 +169,10 @@ export default function GameScreen() {
         <Text style={styles.backText}>{backArrow}  Return</Text>
       </TouchableOpacity>
       <View style={styles.headerCenter}>
-        <Text style={styles.headerTitle}>The Ghost Times</Text>
-        <Text style={styles.headerSub}>DUEL IN PROGRESS</Text>
+        <Text style={styles.headerTitle}>{ghost.name}</Text>
+        <Text style={styles.headerSub}>HAUNTING IN PROGRESS</Text>
       </View>
       <View style={styles.headerBadges}>
-        {ghostActive && <Text style={styles.modeBadge}>❦ Ghost</Text>}
         {chaosActive && <Text style={styles.modeBadge}>✶ Chaos</Text>}
       </View>
     </View>
@@ -244,7 +240,7 @@ export default function GameScreen() {
   );
 
   const inputHint = inputMode === 'keyboard' ? (
-    <Text style={styles.inputHint}>⌨︎  Arrow keys to navigate · Enter to stamp · R to reset</Text>
+    <Text style={styles.inputHint}>⌨︎  Arrow keys to navigate · Enter to place · R to reset</Text>
   ) : null;
 
   return (
@@ -281,7 +277,7 @@ export default function GameScreen() {
         winner={state.winner}
         scoreX={state.players.X.score}
         scoreO={state.players.O.score}
-        isAIMode={isAIMode}
+        ghostName={ghost.name}
         onPlayAgain={handlePlayAgain}
         onGoHome={handleGoHome}
       />

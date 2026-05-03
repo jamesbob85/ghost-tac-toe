@@ -31,7 +31,7 @@ interface GameOverModalProps {
   winner: Player | null;
   scoreX: number;
   scoreO: number;
-  isAIMode: boolean;
+  ghostName: string;
   onPlayAgain: () => void;
   onGoHome: () => void;
 }
@@ -41,7 +41,7 @@ export function GameOverModal({
   winner,
   scoreX,
   scoreO,
-  isAIMode,
+  ghostName,
   onPlayAgain,
   onGoHome,
 }: GameOverModalProps) {
@@ -77,9 +77,9 @@ export function GameOverModal({
 
   const headline = winner === null
     ? 'AN UNRESOLVED MATTER'
-    : isAIMode
-      ? (winner === 'X' ? 'TRIUMPH OVER THE MACHINE' : 'THE MACHINE PREVAILS')
-      : (winner === 'X' ? 'STAMP X CARRIES THE DAY' : 'STAMP O CARRIES THE DAY');
+    : winner === 'X'
+      ? `${ghostName.toUpperCase()} BANISHED`
+      : `${ghostName.toUpperCase()} PREVAILS`;
 
   const sealGlyph = winner === null ? '⁂' : winner === 'X' ? '✕' : '◯';
 
@@ -106,7 +106,7 @@ export function GameOverModal({
             <View style={styles.scoreboard}>
               <View style={styles.scoreCol}>
                 <Text style={[styles.scoreLabel, { color: COLORS.playerX }]}>
-                  {isAIMode ? t('game.you') : t('game.playerX')}
+                  YOU
                 </Text>
                 <Text style={[styles.scoreValue, { color: COLORS.playerX }]}>
                   {scoreX}
@@ -115,7 +115,7 @@ export function GameOverModal({
               <Text style={styles.scoreVs}>vs.</Text>
               <View style={styles.scoreCol}>
                 <Text style={[styles.scoreLabel, { color: COLORS.playerO }]}>
-                  {isAIMode ? t('game.ai') : t('game.playerO')}
+                  THE GHOST
                 </Text>
                 <Text style={[styles.scoreValue, { color: COLORS.playerO }]}>
                   {scoreO}

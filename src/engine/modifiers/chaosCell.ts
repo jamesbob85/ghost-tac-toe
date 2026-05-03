@@ -1,22 +1,24 @@
 import { Board } from '../../types/game';
-import { Modifier } from './types';
-import { CHAOS_BONUS_SCORE, WIN_SCORE } from '../../constants/gameConfig';
+import { Modifier, Rng } from './types';
+import { CHAOS_BONUS_SCORE } from '../../constants/gameConfig';
 
-/** Slice shape for the Chaos Cell modifier */
 interface ChaosSlice {
   cell: number | null;
 }
 
 /**
- * Chaos Cell — a glowing cell rotates each turn. Winning through it doubles
- * (or otherwise multiplies) the score.
+ * Chaos Cell — a glowing cell rotates each turn. Winning through it grants
+ * bonus score (CHAOS_BONUS_SCORE instead of WIN_SCORE).
+ *
+ * Deterministic when given a seeded Rng (e.g. from the simulation harness);
+ * uses Math.random in the live game.
  */
 export const ChaosCell: Modifier = {
   id: 'chaos_cell',
   name: 'Chaos Cell',
   category: 'scoring',
 
-  initState: (board) => ({ cell: pickRandomEmpty(board) }) as ChaosSlice,
+  initState: (board, rng) => ({ cell: pickRandomEmpty(board, rng) }) as ChaosSlice,
 
   scoreFor: (winLine, defaultScore, _state, slice) => {
     const s = slice as ChaosSlice;
@@ -24,20 +26,16 @@ export const ChaosCell: Modifier = {
     return defaultScore;
   },
 
-  afterTurn: (state, prevCell, slice) => {
-    const s = slice as ChaosSlice;
-    return { cell: pickRandomEmpty(state.board, prevCell) } as ChaosSlice;
+  afterTurn: (state, prevCell, _slice, rng) => {
+    return { cell: pickRandomEmpty(state.board, rng, prevCell) } as ChaosSlice;
   },
 };
 
-function pickRandomEmpty(board: Board, exclude?: number): number | null {
+function pickRandomEmpty(board: Board, rng: Rng, exclude?: number): number | null {
   const empty: number[] = [];
   for (let i = 0; i < board.length; i++) {
     if (board[i] === null && i !== exclude) empty.push(i);
   }
   if (empty.length === 0) return null;
-  return empty[Math.floor(Math.random() * empty.length)];
+  return empty[Math.floor(rng() * empty.length)];
 }
-
-/** Ensure WIN_SCORE imported for tree-shaking sanity */
-export const _DEFAULT_SCORE_REF = WIN_SCORE;

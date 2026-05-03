@@ -38,12 +38,9 @@ export function GhostQueue({ player, marks, isVisible }: GhostQueueProps) {
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <View style={styles.rule} />
-        <Text style={styles.eyebrow}>STAMP CHRONICLE — STAMP {player}</Text>
+        <Text style={styles.eyebrow}>{player === 'X' ? 'YOUR MARKS' : 'THEIR MARKS'}</Text>
         <View style={styles.rule} />
       </View>
-      <Text style={styles.subtitle}>
-        {t('game.nextToVanish')}
-      </Text>
 
       <View style={styles.slots}>
         {slots.map((mark, i) => {
@@ -80,9 +77,7 @@ export function GhostQueue({ player, marks, isVisible }: GhostQueueProps) {
               >
                 {mark ? coordLabel(mark.index) : '—'}
               </Text>
-              {isOldest && (
-                <Text style={[styles.warn, { color: inkColor }]}>NEXT</Text>
-              )}
+              {isOldest && <View style={{ height: 9 }} />}
             </View>
           );
         })}

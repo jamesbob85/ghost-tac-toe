@@ -1,21 +1,26 @@
-import { Board, GameState, MarkEntry, Player } from '../../types/game';
+import { Board, GameState, Player } from '../../types/game';
 import { MAX_MARKS, WIN_SCORE } from '../../constants/gameConfig';
 import { checkWin as defaultCheckWin } from '../winDetector';
-import { Modifier, findInCategory, validateAndOrder } from './types';
+import { Modifier, Rng, findInCategory, validateAndOrder } from './types';
+
+const defaultRng: Rng = () => Math.random();
 
 /**
  * Build the initial GameState given an active modifier list.
  * Calls each modifier's initState (to seed its slice) and initBoard (to mutate
  * the starting board) in CATEGORY_ORDER.
  */
-export function createInitialStateWithModifiers(modifierList: Modifier[]): GameState {
+export function createInitialStateWithModifiers(
+  modifierList: Modifier[],
+  rng: Rng = defaultRng,
+): GameState {
   const ordered = validateAndOrder(modifierList);
   let board: Board = Array(9).fill(null);
   const modifierState: Record<string, unknown> = {};
 
   for (const m of ordered) {
-    if (m.initState) modifierState[m.id] = m.initState(board);
-    if (m.initBoard) board = m.initBoard(board, modifierState[m.id]);
+    if (m.initState) modifierState[m.id] = m.initState(board, rng);
+    if (m.initBoard) board = m.initBoard(board, modifierState[m.id], rng);
   }
 
   return {
@@ -31,10 +36,6 @@ export function createInitialStateWithModifiers(modifierList: Modifier[]): GameS
   };
 }
 
-/**
- * Compute legal moves for the current state.
- * Default = empty cells. Topology modifiers can filter.
- */
 export function getLegalMoves(state: GameState, modifiers: Modifier[]): number[] {
   let moves = state.board.reduce<number[]>((acc, cell, i) => {
     if (cell === null) acc.push(i);
@@ -55,10 +56,10 @@ export function applyMoveWithModifiers(
   state: GameState,
   cellIndex: number,
   modifiers: Modifier[],
+  rng: Rng = defaultRng,
 ): GameState {
   if (state.phase !== 'playing') return state;
   if (state.board[cellIndex] !== null) return state;
-  // Topology may reject a move
   const legal = getLegalMoves(state, modifiers);
   if (!legal.includes(cellIndex)) return state;
 
@@ -82,10 +83,10 @@ export function applyMoveWithModifiers(
   };
   workingState.board[cellIndex] = player;
 
-  // ── 2. afterPlace hooks (e.g., Mirror, Block Credits) ────────────
+  // ── 2. afterPlace hooks (Mirror, Block Credits, etc.) ────────────
   for (const m of ordered) {
     if (m.afterPlace) {
-      const result = m.afterPlace(workingState, cellIndex, player, workingState.modifierState[m.id]);
+      const result = m.afterPlace(workingState, cellIndex, player, workingState.modifierState[m.id], rng);
       workingState = result.state;
       workingState = {
         ...workingState,
@@ -94,15 +95,16 @@ export function applyMoveWithModifiers(
     }
   }
 
-  // ── 3. Eviction (if a marks-category modifier provides pickEviction) ────
+  // ── 3. Eviction loop ────────────────────────────────────────────
+  // Loops in case afterPlace added multiple marks (e.g., Mirror puts the queue at +2).
   const marksMod = findInCategory(ordered, 'marks');
-  const max = marksMod?.maxMarks
-    ? marksMod.maxMarks(MAX_MARKS, workingState, workingState.modifierState[marksMod.id])
-    : MAX_MARKS;
-
   if (marksMod?.pickEviction) {
-    const playerMarks = workingState.players[player].marks;
-    if (playerMarks.length > max) {
+    while (true) {
+      const max = marksMod.maxMarks
+        ? marksMod.maxMarks(MAX_MARKS, workingState, workingState.modifierState[marksMod.id])
+        : MAX_MARKS;
+      const playerMarks = workingState.players[player].marks;
+      if (playerMarks.length <= max) break;
       const evicted = marksMod.pickEviction(
         playerMarks,
         workingState,
@@ -150,8 +152,7 @@ export function applyMoveWithModifiers(
     };
   }
 
-  // ── 5. Draw check ───────────────────────────────────────────────
-  // True draw only possible without an eviction modifier (board full).
+  // ── 5. Draw check (only without an eviction modifier) ───────────
   if (!marksMod?.pickEviction && workingState.board.every((c) => c !== null)) {
     return {
       ...workingState,
@@ -174,11 +175,11 @@ export function applyMoveWithModifiers(
     };
   }
 
-  // ── 7. afterTurn hooks (chaos cell rotation, etc.) ──────────────
+  // ── 7. afterTurn hooks (chaos rotation, etc.) ───────────────────
   let newModState = { ...workingState.modifierState };
   for (const m of ordered) {
     if (m.afterTurn) {
-      newModState[m.id] = m.afterTurn(workingState, cellIndex, newModState[m.id]);
+      newModState[m.id] = m.afterTurn(workingState, cellIndex, newModState[m.id], rng);
     }
   }
 

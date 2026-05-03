@@ -39,7 +39,7 @@ export function playMatch(
   const rng = mulberry32(opts.seed);
   const maxTurns = opts.maxTurns ?? 60;
 
-  let state: GameState = createInitialState(opts.modifiers);
+  let state: GameState = createInitialState(opts.modifiers, rng);
   const moves: MoveLogEntry[] = [];
 
   while (state.phase === 'playing' && state.turnNumber < maxTurns) {
@@ -48,12 +48,11 @@ export function playMatch(
     const cell = strategy.pickMove(state, player, rng);
 
     if (cell < 0 || state.board[cell] !== null) {
-      // Strategy returned an illegal move — bail safely
       break;
     }
 
     moves.push({ turn: state.turnNumber, player, cell });
-    state = applyMove(state, cell);
+    state = applyMove(state, cell, rng);
   }
 
   const hitTurnCap = state.phase === 'playing' && state.turnNumber >= maxTurns;
