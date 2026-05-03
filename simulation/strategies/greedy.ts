@@ -1,5 +1,5 @@
 import { GameState, Player } from '../../src/types/game';
-import { applyMove, getEmptyCells } from '../../src/engine/gameEngine';
+import { applyMove, getLegalMoves } from '../../src/engine/gameEngine';
 import { Strategy, pickRandom } from './types';
 
 const CENTER = [4];
@@ -15,7 +15,7 @@ export const GreedyStrategy: Strategy = {
   name: 'Greedy',
   rank: 2,
   pickMove(state: GameState, me: Player, rng) {
-    const empties = getEmptyCells(state.board);
+    const empties = getLegalMoves(state);
     const opp: Player = me === 'X' ? 'O' : 'X';
 
     // 1. Take an immediate win

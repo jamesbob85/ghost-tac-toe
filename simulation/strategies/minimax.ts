@@ -1,5 +1,5 @@
 import { GameState, Player } from '../../src/types/game';
-import { applyMove, getEmptyCells } from '../../src/engine/gameEngine';
+import { applyMove, getLegalMoves } from '../../src/engine/gameEngine';
 import { Strategy, pickRandom } from './types';
 
 const WIN_LINES: [number, number, number][] = [
@@ -28,7 +28,7 @@ function minimax(
   if (state.phase === 'draw') return 0;
   if (depth === 0) return evaluate(state, me);
 
-  const empties = getEmptyCells(state.board);
+  const empties = getLegalMoves(state);
   if (empties.length === 0) return evaluate(state, me);
 
   if (isMaxTurn) {
@@ -83,7 +83,7 @@ export function makeMinimaxStrategy(opts: {
     name: opts.name,
     rank: opts.rank,
     pickMove(state, me, rng) {
-      const empties = getEmptyCells(state.board);
+      const empties = getLegalMoves(state);
       if (empties.length === 0) return -1;
 
       // Score each move; track best & all moves tied at best

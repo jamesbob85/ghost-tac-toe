@@ -2,14 +2,16 @@ import { Board, GameState, Player } from '../../types/game';
 import { MAX_MARKS, WIN_SCORE } from '../../constants/gameConfig';
 import { checkWin as defaultCheckWin } from '../winDetector';
 import { Modifier, Rng, findInCategory, validateAndOrder } from './types';
+import { getCredits, spendCredits } from './blockCredits';
 
 const defaultRng: Rng = () => Math.random();
 
-/**
- * Build the initial GameState given an active modifier list.
- * Calls each modifier's initState (to seed its slice) and initBoard (to mutate
- * the starting board) in CATEGORY_ORDER.
- */
+/** Per-call options. `andThen` enables Double Stamp (costs `costCredits` of the resource modifier). */
+export interface ApplyMoveOptions {
+  andThen?: number;
+  costCredits?: number;
+}
+
 export function createInitialStateWithModifiers(
   modifierList: Modifier[],
   rng: Rng = defaultRng,
@@ -49,44 +51,38 @@ export function getLegalMoves(state: GameState, modifiers: Modifier[]): number[]
 }
 
 /**
- * Apply a move: place mark → run afterPlace hooks → eviction → win check →
- * scoring → turn flip → afterTurn hooks. Pure: returns a new state.
+ * Place a mark + run afterPlace hooks + eviction loop. Pure subroutine used
+ * by applyMoveWithModifiers; runs once per "physical" placement (called
+ * twice for Double Stamp).
  */
-export function applyMoveWithModifiers(
+function placeMarkAndEvict(
   state: GameState,
-  cellIndex: number,
-  modifiers: Modifier[],
-  rng: Rng = defaultRng,
+  cell: number,
+  ordered: Modifier[],
+  rng: Rng,
 ): GameState {
-  if (state.phase !== 'playing') return state;
-  if (state.board[cellIndex] !== null) return state;
-  const legal = getLegalMoves(state, modifiers);
-  if (!legal.includes(cellIndex)) return state;
-
-  const ordered = validateAndOrder(modifiers);
   const player: Player = state.currentPlayer;
   const opponent: Player = player === 'X' ? 'O' : 'X';
 
-  // ── 1. Place mark ────────────────────────────────────────────────
   let workingState: GameState = {
     ...state,
     board: [...state.board],
     players: {
       ...state.players,
       [player]: {
-        marks: [...state.players[player].marks, { index: cellIndex, turn: state.turnNumber }],
+        marks: [...state.players[player].marks, { index: cell, turn: state.turnNumber }],
         score: state.players[player].score,
       },
       [opponent]: { ...state.players[opponent] },
     },
     modifierState: { ...state.modifierState },
   };
-  workingState.board[cellIndex] = player;
+  workingState.board[cell] = player;
 
-  // ── 2. afterPlace hooks (Mirror, Block Credits, etc.) ────────────
+  // afterPlace hooks
   for (const m of ordered) {
     if (m.afterPlace) {
-      const result = m.afterPlace(workingState, cellIndex, player, workingState.modifierState[m.id], rng);
+      const result = m.afterPlace(workingState, cell, player, workingState.modifierState[m.id], rng);
       workingState = result.state;
       workingState = {
         ...workingState,
@@ -95,8 +91,7 @@ export function applyMoveWithModifiers(
     }
   }
 
-  // ── 3. Eviction loop ────────────────────────────────────────────
-  // Loops in case afterPlace added multiple marks (e.g., Mirror puts the queue at +2).
+  // Eviction loop
   const marksMod = findInCategory(ordered, 'marks');
   if (marksMod?.pickEviction) {
     while (true) {
@@ -124,46 +119,100 @@ export function applyMoveWithModifiers(
     }
   }
 
-  // ── 4. Win check ────────────────────────────────────────────────
+  return workingState;
+}
+
+function checkWinForCurrent(
+  state: GameState,
+  ordered: Modifier[],
+): readonly [number, number, number] | null {
   const winMod = findInCategory(ordered, 'winCondition');
-  const winLine = winMod?.checkWin
-    ? winMod.checkWin(workingState.board, player, workingState, workingState.modifierState[winMod.id])
-    : defaultCheckWin(workingState.board, player);
+  return winMod?.checkWin
+    ? winMod.checkWin(state.board, state.currentPlayer, state, state.modifierState[winMod.id])
+    : defaultCheckWin(state.board, state.currentPlayer);
+}
 
-  if (winLine) {
-    const scoringMod = findInCategory(ordered, 'scoring');
-    const score = scoringMod?.scoreFor
-      ? scoringMod.scoreFor(winLine, WIN_SCORE, workingState, workingState.modifierState[scoringMod.id])
-      : WIN_SCORE;
+function finalizeWin(
+  state: GameState,
+  winLine: readonly [number, number, number],
+  ordered: Modifier[],
+  startingTurn: number,
+): GameState {
+  const player: Player = state.currentPlayer;
+  const scoringMod = findInCategory(ordered, 'scoring');
+  const score = scoringMod?.scoreFor
+    ? scoringMod.scoreFor(winLine, WIN_SCORE, state, state.modifierState[scoringMod.id])
+    : WIN_SCORE;
+  return {
+    ...state,
+    players: {
+      ...state.players,
+      [player]: { ...state.players[player], score: state.players[player].score + score },
+    },
+    phase: 'won',
+    winner: player,
+    winLine: [...winLine],
+    turnNumber: startingTurn + 1,
+  };
+}
 
-    return {
-      ...workingState,
-      players: {
-        ...workingState.players,
-        [player]: {
-          ...workingState.players[player],
-          score: workingState.players[player].score + score,
-        },
-      },
-      phase: 'won',
-      winner: player,
-      winLine: [...winLine],
-      turnNumber: state.turnNumber + 1,
-    };
+/**
+ * Apply a move (with optional Double Stamp via `options.andThen`).
+ * Place mark → afterPlace → eviction → win check; optionally repeat for
+ * second placement; draw check; turn flip; afterTurn hooks.
+ */
+export function applyMoveWithModifiers(
+  state: GameState,
+  cellIndex: number,
+  modifiers: Modifier[],
+  rng: Rng = defaultRng,
+  options?: ApplyMoveOptions,
+): GameState {
+  if (state.phase !== 'playing') return state;
+  if (state.board[cellIndex] !== null) return state;
+  const legal = getLegalMoves(state, modifiers);
+  if (!legal.includes(cellIndex)) return state;
+
+  const ordered = validateAndOrder(modifiers);
+  const startingTurn = state.turnNumber;
+  const player: Player = state.currentPlayer;
+  const opponent: Player = player === 'X' ? 'O' : 'X';
+
+  // ── First placement ──────────────────────────────────────────────
+  let workingState = placeMarkAndEvict(state, cellIndex, ordered, rng);
+
+  let winLine = checkWinForCurrent(workingState, ordered);
+  if (winLine) return finalizeWin(workingState, winLine, ordered, startingTurn);
+
+  // ── Optional Double Stamp ────────────────────────────────────────
+  if (options?.andThen !== undefined && (options.costCredits ?? 0) > 0) {
+    const legal2 = getLegalMoves(workingState, modifiers);
+    if (
+      legal2.includes(options.andThen) &&
+      workingState.board[options.andThen] === null &&
+      getCredits(workingState, player) >= (options.costCredits ?? 0)
+    ) {
+      workingState = placeMarkAndEvict(workingState, options.andThen, ordered, rng);
+      workingState = spendCredits(workingState, player, options.costCredits ?? 0);
+
+      winLine = checkWinForCurrent(workingState, ordered);
+      if (winLine) return finalizeWin(workingState, winLine, ordered, startingTurn);
+    }
   }
 
-  // ── 5. Draw check (only without an eviction modifier) ───────────
+  // ── Draw check (only without an eviction modifier) ───────────────
+  const marksMod = findInCategory(ordered, 'marks');
   if (!marksMod?.pickEviction && workingState.board.every((c) => c !== null)) {
     return {
       ...workingState,
       phase: 'draw',
       winner: null,
       winLine: null,
-      turnNumber: state.turnNumber + 1,
+      turnNumber: startingTurn + 1,
     };
   }
 
-  // ── 6. Turn flip ────────────────────────────────────────────────
+  // ── Turn flip ────────────────────────────────────────────────────
   const turnMod = findInCategory(ordered, 'turns');
   let nextPlayer: Player = opponent;
   if (turnMod?.nextPlayer) {
@@ -175,7 +224,7 @@ export function applyMoveWithModifiers(
     };
   }
 
-  // ── 7. afterTurn hooks (chaos rotation, etc.) ───────────────────
+  // ── afterTurn hooks ──────────────────────────────────────────────
   let newModState = { ...workingState.modifierState };
   for (const m of ordered) {
     if (m.afterTurn) {
@@ -186,7 +235,7 @@ export function applyMoveWithModifiers(
   return {
     ...workingState,
     currentPlayer: nextPlayer,
-    turnNumber: state.turnNumber + 1,
+    turnNumber: startingTurn + 1,
     modifierState: newModState,
   };
 }

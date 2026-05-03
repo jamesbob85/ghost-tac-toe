@@ -73,6 +73,54 @@ export const VARIANTS: Record<string, Variant> = {
       maxTurns: 60,
     },
   },
+  // ─── Phase 1: topology candidates (layered on ghost eviction) ───
+  ghost_smudge: {
+    id: 'ghost_smudge',
+    name: 'Ghost + Smudge',
+    description: 'Ghost eviction with one random cell permanently blocked.',
+    matchOptions: {
+      modifiers: ['ghost_eviction', 'smudge'],
+      maxTurns: 60,
+    },
+  },
+  ghost_cracked: {
+    id: 'ghost_cracked',
+    name: 'Ghost + Cracked Centre',
+    description: 'Ghost eviction with a wild, unclaimable centre cell.',
+    matchOptions: {
+      modifiers: ['ghost_eviction', 'cracked_center'],
+      maxTurns: 60,
+    },
+  },
+  // ─── Standalone topology (no ghost) — does topology break globally? ──
+  smudge_alone: {
+    id: 'smudge_alone',
+    name: 'Smudge (no ghost)',
+    description: 'Smudge with no ghost eviction (vanilla TTT minus 1 cell).',
+    matchOptions: {
+      modifiers: ['smudge'],
+      maxTurns: 9,
+    },
+  },
+  cracked_alone: {
+    id: 'cracked_alone',
+    name: 'Cracked Centre (no ghost)',
+    description: 'Cracked centre on a vanilla board (no ghost eviction).',
+    matchOptions: {
+      modifiers: ['cracked_center'],
+      maxTurns: 9,
+    },
+  },
+  // ─── Phase 1: resource (Block Credits + Double Stamp powerup) ────
+  ghost_blockcredits: {
+    id: 'ghost_blockcredits',
+    name: 'Ghost + Block Credits',
+    description: 'Ghost eviction + Block Credits resource economy with Double Stamp powerup (cost 2).',
+    matchOptions: {
+      modifiers: ['ghost_eviction', 'block_credits'],
+      maxTurns: 60,
+    },
+  },
 };
 
 export const PHASE_0_VARIANTS: Variant[] = [

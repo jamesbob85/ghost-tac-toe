@@ -12,7 +12,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PHASE_0_STRATEGIES } from './strategies';
+import { PHASE_0_STRATEGIES, RESOURCE_STRATEGIES } from './strategies';
 import { Strategy } from './strategies/types';
 import { PHASE_0_VARIANTS, VARIANTS, Variant } from './variants';
 import { runTournament, TournamentResult } from './runners/tournament';
@@ -41,6 +41,7 @@ function parseArgs(argv: string[]): CliArgs {
     if (a === '--matches') args.matches = parseInt(argv[++i], 10);
     else if (a === '--seed') args.seed = parseInt(argv[++i], 10);
     else if (a === '--no-report') args.writeReport = false;
+    else if (a === '--resource') args.strategies = RESOURCE_STRATEGIES;
     else if (a === '--variants') {
       const ids = argv[++i].split(',');
       const found = ids.map((id) => VARIANTS[id]).filter(Boolean);

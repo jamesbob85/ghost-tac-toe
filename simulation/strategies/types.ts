@@ -1,18 +1,17 @@
 import { GameState, Player } from '../../src/types/game';
 
+/**
+ * A move is either a single cell (regular placement) or a Double Stamp
+ * pair (places at `cell` then `doubleStamp`, costing 2 Block Credits).
+ * Strategies that don't use powerups just return numbers.
+ */
+export type Move = number | { cell: number; doubleStamp: number };
+
 export interface Strategy {
-  /** Stable identifier used in matrices and reports */
   readonly id: string;
-  /** Human-readable name */
   readonly name: string;
-  /** Approximate strength rank (1 = weakest, used for skill-gradient analysis) */
   readonly rank: number;
-  /**
-   * Pick a cell index to play.
-   * `state.currentPlayer` is the player whose turn it is.
-   * `me` is which side this strategy controls (so it can evaluate from its own perspective).
-   */
-  pickMove(state: GameState, me: Player, rng: () => number): number;
+  pickMove(state: GameState, me: Player, rng: () => number): Move;
 }
 
 /** Mulberry32 PRNG. Deterministic given a seed. */

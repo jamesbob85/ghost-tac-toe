@@ -1,5 +1,6 @@
 import { GameState, Player } from '../../src/types/game';
 import { applyMove, createInitialState } from '../../src/engine/gameEngine';
+import { DOUBLE_STAMP_COST } from '../../src/engine/modifiers/blockCredits';
 import { Strategy, mulberry32 } from '../strategies/types';
 
 export interface MatchOptions {
@@ -45,14 +46,20 @@ export function playMatch(
   while (state.phase === 'playing' && state.turnNumber < maxTurns) {
     const player = state.currentPlayer;
     const strategy = player === 'X' ? xStrategy : oStrategy;
-    const cell = strategy.pickMove(state, player, rng);
+    const move = strategy.pickMove(state, player, rng);
+
+    const cell = typeof move === 'number' ? move : move.cell;
+    const andThen = typeof move === 'number' ? undefined : move.doubleStamp;
 
     if (cell < 0 || state.board[cell] !== null) {
       break;
     }
 
     moves.push({ turn: state.turnNumber, player, cell });
-    state = applyMove(state, cell, rng);
+    state = applyMove(state, cell, rng, {
+      andThen,
+      costCredits: andThen !== undefined ? DOUBLE_STAMP_COST : undefined,
+    });
   }
 
   const hitTurnCap = state.phase === 'playing' && state.turnNumber >= maxTurns;

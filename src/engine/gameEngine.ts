@@ -3,17 +3,11 @@ import { resolveModifiers, CLASSIC_MODIFIERS } from './modifiers/registry';
 import { Rng } from './modifiers/types';
 import {
   applyMoveWithModifiers,
+  ApplyMoveOptions,
   createInitialStateWithModifiers,
   getLegalMoves as getLegalMovesPipeline,
 } from './modifiers/pipeline';
 
-/**
- * Build a fresh game state for the given modifier id list. Pass an empty list
- * for vanilla tic-tac-toe; pass [GhostEviction.id] for the classic Ghost Tac
- * Toe experience; pass a daily edition's modifier list for daily play.
- *
- * Pass a seeded Rng for deterministic behavior (used by the simulation harness).
- */
 export function createInitialState(
   modifierIds: string[] = CLASSIC_MODIFIERS,
   rng?: Rng,
@@ -22,12 +16,18 @@ export function createInitialState(
 }
 
 /**
- * Pure reducer: apply a move and return the new state. The state itself
- * carries the active modifier list, so callers don't need to pass it.
+ * Apply a move. `options.andThen` enables Double Stamp (place a second mark
+ * in the same turn, costing `options.costCredits` from the player's
+ * Block Credits balance).
  */
-export function applyMove(state: GameState, cellIndex: number, rng?: Rng): GameState {
+export function applyMove(
+  state: GameState,
+  cellIndex: number,
+  rng?: Rng,
+  options?: ApplyMoveOptions,
+): GameState {
   const modifiers = resolveModifiers(state.modifiers);
-  return applyMoveWithModifiers(state, cellIndex, modifiers, rng);
+  return applyMoveWithModifiers(state, cellIndex, modifiers, rng, options);
 }
 
 export function getLegalMoves(state: GameState): number[] {
