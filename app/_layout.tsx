@@ -6,10 +6,8 @@ import { I18nManager, StyleSheet } from 'react-native';
 import * as Localization from 'expo-localization';
 import { COLORS } from '../src/constants/theme';
 
-// Initialize i18n (side-effect import)
 import '../src/i18n';
 
-// RTL support: detect device text direction and configure
 const locales = Localization.getLocales();
 const isRTL = locales[0]?.textDirection === 'rtl';
 if (I18nManager.isRTL !== isRTL) {

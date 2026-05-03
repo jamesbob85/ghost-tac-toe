@@ -1,185 +1,112 @@
 # Ghost Tac Toe — Project Plan
 
-## Overview
+## Where we are
 
-Ghost Tac Toe is a mobile tic-tac-toe game with a twist: each player can only have **3 marks on the board at once**. When you place your 4th mark, your oldest one vanishes (FIFO eviction). This eliminates draws and creates dramatic reversals.
+Ghost Tac Toe is a tic-tac-toe variant where each player can only have 3 marks on the board at once (FIFO eviction — placing a 4th mark vanishes the oldest one). The mechanic eliminates draws and produces dramatic reversals.
 
-Built with **Expo SDK 54** (managed workflow), targeting **Android** via **Google Play Store**.
+We previously expanded toward a Google Play release with online multiplayer (Supabase), Firebase Analytics, and Google Play Games Services achievements/leaderboards. **We've now pivoted away from that.**
 
----
+## The pivot — web-first, iteration-first
 
-## Game Mechanics
+The Play Store path was adding too much surface area (auth, schemas, native plugins, store assets) before we'd proven the core mechanic was fun. We're stripping that infrastructure and shipping a web build instead. When we find the fun, we'll re-add the Play Store path.
 
-### Ghost Mode (Core Twist)
-- Each player has a mark queue (max 3 marks)
-- When placing a 4th mark, the oldest mark is evicted BEFORE the win check
-- Marks visually age: full opacity → dim → ghostly (opacity levels: 1.0 → 0.65 → 0.35)
-- Eviction happens with a fade animation
+**Core principle:** every change should make "edit → save → playtest" faster.
 
-### Chaos Mode (Bonus)
-- A random cell glows with a lightning indicator each turn
-- Winning through that cell awards bonus points (+2)
-- Adds risk/reward layer on top of Ghost Mode
+## Current stack (after the pivot)
 
-### AI Opponents
-- **Easy**: Random moves from available cells
-- **Medium**: 1-step lookahead — checks for winning moves, then blocks opponent wins, accounts for ghost eviction
-- **Hard**: Minimax with alpha-beta pruning, depth 6, full ghost eviction simulation
+| Layer | Technology |
+|---|---|
+| Framework | Expo SDK 54 (managed) |
+| Runtime | React Native 0.81.5 + react-native-web |
+| UI | React 19, React Native Reanimated v4 |
+| Navigation | Expo Router v6 (file-based) |
+| Storage | AsyncStorage (mobile) / localStorage (web — same API via shim) |
+| Build | `npx expo export -p web` → static `dist/` bundle |
+| Hosting (dev) | Cloudflare Pages or GitHub Pages — push-to-deploy |
+| Hosting (playtest) | itch.io HTML5 project page when we have something to share |
 
-### Game Modes
-- **vs AI**: Play against Easy/Medium/Hard AI
-- **vs Friend**: Local 2-player pass-and-play
+**No backend. No auth. No analytics. No Play Console. No EAS build queue.** Iteration loop is `npm run web` → save → reload.
 
----
+## What we removed and why
 
-## Tech Stack
+| Removed | Why |
+|---|---|
+| Supabase (`@supabase/supabase-js`, all `src/services/*` for online) | Online play is a distribution/retention feature, not a fun-finding feature. Reintroduces as a Railway service when the mechanic is proven |
+| Firebase Analytics (`@react-native-firebase/*`) | Analytics on a pre-product is noise. Use `console.log` during dev; add Plausible/Umami later if needed |
+| GPGS (`react-native-google-leaderboards-and-achievements`, `withGPGS`) | Play Store-specific. Adds a native module + config plugin + service account flow |
+| KeyEvent native module (`react-native-keyevent`) | Was only for Android key input. Web has `window.addEventListener('keydown')` if/when we want keyboard nav |
+| Online routes (`online.tsx`, `matchmaking.tsx`, `online-game.tsx`, `leaderboard.tsx`, `profile.tsx`) | Backend-dependent |
+| Achievements + ranks logic | Tied to GPGS leaderboards |
+| `google-services.json`, `plugins/withFirebase.js`, `plugins/withGPGS.js` | Native config — not needed for web |
 
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| Framework | Expo (managed) | SDK 54 (~54.0.33) |
-| Runtime | React Native | 0.81.5 |
-| UI Library | React | 19.1.0 |
-| Navigation | Expo Router | ~6.0.23 (v3, file-based) |
-| Animations | React Native Reanimated | ~4.1.1 (v4) |
-| Haptics | expo-haptics | ~15.0.8 |
-| Audio | expo-av | ~16.0.8 |
-| Storage | @react-native-async-storage | ^2.2.0 |
-| SVG | react-native-svg | ^15.12.1 |
-| Safe Areas | react-native-safe-area-context | ~5.6.0 |
-| Build/Deploy | EAS Build + EAS Submit | CLI ~15.x |
+## Functionality we lost vs. how we handle it
 
----
+| Lost capability | Replacement |
+|---|---|
+| Online multiplayer | Hotseat (pass-and-play) + AI opponents (already in the codebase) |
+| Elo rating + global leaderboard | Local stats (win/loss/streak) in `statsStore` — already present |
+| Cross-device profile sync | None during iteration; localStorage per-device |
+| GPGS achievements | None — re-add when the mechanic is proven and we want retention hooks |
+| Firebase event logging | `console.log` in dev. Add Plausible to the static site later if useful |
+| Native keyboard/controller input | Skipped — add `window.addEventListener('keydown')` on web if we want it |
+| Haptics | `expo-haptics` is a no-op on web — works automatically |
 
-## Architecture
+## What we kept
 
-### Directory Structure
+- Core game engine (`src/engine/*`) — pure reducer, AI, win detection
+- All UI components (`src/components/*`)
+- Stats persistence (`src/store/statsStore.ts`)
+- Audio (`src/hooks/useSound.ts`) and haptics (`src/hooks/useHaptics.ts`)
+- Localization (i18next)
+- Layout/responsive logic (`src/hooks/useLayout.ts`)
+- Theme + design system (`src/constants/theme.ts`)
+- Three game modes screen-side: vs AI (easy/medium/hard), vs Friend (hotseat), with Ghost Mode and Chaos Mode toggles
+
+## Game mechanics (unchanged)
+
+- **Ghost Mode**: each player has a queue of 3 marks. Placing a 4th evicts the oldest BEFORE the win check. Marks visually age (full opacity → dim → ghostly).
+- **Chaos Mode**: a random cell glows each turn; winning through it awards bonus points.
+- **AI**: easy (random), medium (1-step lookahead with eviction), hard (minimax + alpha-beta, depth 6).
+
+## Working directory after the cut
 
 ```
 tictac/
-├── app/                        # Expo Router screens (file-based routing)
-│   ├── _layout.tsx             # Root layout (SafeAreaProvider, GestureHandler, Stack)
-│   ├── index.tsx               # Home screen (mode select, difficulty, toggles)
-│   ├── game.tsx                # Game screen (board, AI, win detection)
-│   ├── scores.tsx              # Stats/scores screen
-│   └── settings.tsx            # Settings screen (haptics, sound toggles)
+├── app/                        # Expo Router screens
+│   ├── _layout.tsx             # Root layout
+│   ├── index.tsx               # Home (mode select)
+│   ├── game.tsx                # Game screen
+│   ├── scores.tsx              # Local stats
+│   └── settings.tsx            # Audio, haptics, language
 ├── src/
-│   ├── types/
-│   │   └── game.ts             # TypeScript types (Player, Board, GameState, etc.)
-│   ├── constants/
-│   │   ├── theme.ts            # Colors, spacing, typography
-│   │   └── gameConfig.ts       # MAX_MARKS=3, WIN_LINES, AI_THINK_DELAY_MS
-│   ├── engine/
-│   │   ├── gameEngine.ts       # Pure reducer: createInitialState, applyMove
-│   │   ├── aiEngine.ts         # AI: easy/medium/hard (minimax w/ alpha-beta)
-│   │   └── winDetector.ts      # checkWin, isBoardFull
-│   ├── hooks/
-│   │   ├── useGameState.ts     # useReducer wrapper for game state
-│   │   ├── useAI.ts            # AI move scheduling (setTimeout + cleanup)
-│   │   ├── useHaptics.ts       # Haptic feedback patterns
-│   │   └── useSound.ts         # Sound effects
-│   ├── store/
-│   │   └── statsStore.ts       # AsyncStorage persistence for win/loss stats
-│   └── components/
-│       ├── board/
-│       │   ├── Board.tsx        # 3x3 grid with explicit row containers
-│       │   ├── Cell.tsx         # Individual cell with age-based opacity + animations
-│       │   └── WinLine.tsx      # Animated SVG win line overlay
-│       ├── game/
-│       │   ├── PlayerBadge.tsx  # Current player indicator with glow
-│       │   └── GhostQueue.tsx   # Visual mark queue showing eviction order
-│       └── ui/
-│           ├── Button.tsx       # Reusable styled button
-│           └── Modal.tsx        # Game over modal
-├── assets/
-│   ├── icon.png                # App icon (1024x1024)
-│   ├── adaptive-icon.png       # Android adaptive icon foreground
-│   ├── splash.png              # Splash screen (1284x2778)
-│   ├── feature-graphic.png     # Play Store feature graphic (1024x500)
-│   ├── play-store-icon.png     # Play Store icon (512x512, no alpha)
-│   └── privacy-policy.html     # Privacy policy (no data collection)
-├── scripts/
-│   └── generate-assets.js      # Sharp-based SVG→PNG asset generator
-├── app.json                    # Expo config
-├── eas.json                    # EAS Build + Submit config
-├── babel.config.js             # Babel with reanimated plugin
-├── store-listing.md            # Google Play Store listing copy
-├── .npmrc                      # legacy-peer-deps=true (required for EAS builds)
-└── google-play-key.json        # Google Play API key (DO NOT COMMIT)
+│   ├── engine/                 # Pure game logic (unchanged)
+│   ├── components/             # UI (unchanged)
+│   ├── hooks/                  # useGameState, useAI, useHaptics, useSound, useLayout, useInput
+│   ├── store/statsStore.ts     # Local stats (AsyncStorage)
+│   ├── i18n/                   # Localization
+│   ├── constants/              # theme.ts, gameConfig.ts
+│   └── types/game.ts
+├── assets/                     # Icons, splash, sounds
+├── scripts/generate-assets.js  # Sharp-based asset gen
+├── app.json                    # Expo config (stripped of native plugins)
+├── package.json                # No Firebase, GPGS, Supabase, keyevent
+└── PLAN.md                     # This file
 ```
 
-### Design Patterns
+## Next steps (in order)
 
-1. **Pure Reducer Engine**: Game logic is a pure function (`applyMove`) with no side effects. State transitions are deterministic and testable.
+1. **Get the web build clean** — `npm run web` boots without errors
+2. **Set up Cloudflare Pages or GitHub Pages** — push-to-deploy on `main`
+3. **Iterate on the mechanic** — Ghost Mode tuning, Chaos Mode variants, alternate win conditions, board sizes, mark counts
+4. **First playtest URL** — share with 3–5 people, capture reactions
+5. **itch.io page** — once a build is worth playtesting more broadly
+6. **(Later) Online multiplayer on Railway** — single Node + WebSockets + SQLite/Postgres service when the mechanic is proven fun
 
-2. **Stable Refs for AI**: The game screen uses `useRef` for `makeMove`, haptics, and sound callbacks to prevent AI timer resets when state changes.
+## When we go back to mobile
 
-3. **Explicit Grid Layout**: Board uses 3 explicit `<View>` row containers instead of `flexWrap` (which doesn't reliably produce 3 columns in RN).
+The codebase is still Expo. To rebuild for Android/Play Store later we'll re-add:
+- The native plugins we stripped (Firebase, GPGS) — these are recoverable from git history
+- The EAS Build/Submit pipeline (eas.json is unchanged, the production profile still works)
+- A new versionCode and store listing pass
 
-4. **Unconditional Hooks**: All hooks are called before any conditional returns to satisfy React's rules of hooks.
-
----
-
-## Build & Deploy
-
-### EAS Configuration
-- **Project ID**: 005595bc-73ad-48c6-a977-cc8f874b1e98
-- **Expo Account**: jamesbob85
-- **Android Package**: dev.playhunter.ghosttactoe
-
-### Build Profiles (eas.json)
-- `development`: Dev client, internal distribution
-- `preview`: APK for internal testing
-- `production`: AAB (app-bundle) for Play Store
-
-### Build Commands
-```bash
-# Production build
-EXPO_TOKEN="<token>" npx eas-cli build --platform android --profile production --non-interactive
-
-# Submit to Play Store (after first manual upload)
-EXPO_TOKEN="<token>" npx eas-cli submit --platform android --profile production --latest --non-interactive
-```
-
-### Current Build Status
-- **Successful build**: 40461e20-12b3-46d0-bab4-2e61dd9d70a1
-- **AAB artifact**: https://expo.dev/artifacts/eas/8WkrPmZfNH4B6yBwQXFSsM.aab
-- **Version**: 1.0.0, versionCode 1
-
----
-
-## Google Play Store Submission
-
-### Completed
-- [x] Production AAB built
-- [x] App icon generated (1024x1024 + adaptive + 512x512 Play Store)
-- [x] Feature graphic generated (1024x500)
-- [x] Store listing copy written (store-listing.md)
-- [x] Privacy policy created (assets/privacy-policy.html)
-- [x] Google Play API key configured (google-play-key.json)
-
-### Pending (Manual Steps)
-- [ ] Upload AAB manually in Google Play Console (first submission must be manual)
-- [ ] Fill store listing in Play Console
-- [ ] Upload feature graphic + take/upload phone screenshots
-- [ ] Host privacy-policy.html (e.g., GitHub Pages) and set URL in Play Console
-- [ ] Complete content rating questionnaire (all "no" — no objectionable content)
-- [ ] Set pricing: Free
-- [ ] Submit for review
-
-### For Future Updates
-After the first manual submission, updates can be automated:
-1. Bump `version` and `versionCode` in app.json
-2. Run `eas build --platform android --profile production`
-3. Run `eas submit --platform android --profile production --latest`
-
----
-
-## Visual Design
-
-- **Theme**: Dark (background #0f0f23)
-- **Player X**: Purple (#8b5cf6)
-- **Player O**: Cyan (#06b6d4)
-- **Chaos Cell**: Amber (#f59e0b)
-- **Animations**: Spring placement, fade eviction, win glow, chaos pulse
-- **Safe Areas**: react-native-safe-area-context on all screens (handles camera cutouts)
-- **Max Content Width**: 480px (for tablets/foldables)
+Nothing in the web pivot blocks going back to mobile — we're just deferring the native integrations until we know what game we're shipping.

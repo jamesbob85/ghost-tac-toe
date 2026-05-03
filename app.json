@@ -1,7 +1,4 @@
 {
-  "react-native-google-leaderboards-and-achievements": {
-    "projectId": "PLACEHOLDER_GPGS_PROJECT_ID"
-  },
   "expo": {
     "name": "Ghost Tac Toe",
     "slug": "ghost-tac-toe",
@@ -25,19 +22,19 @@
         "backgroundColor": "#110f1a"
       },
       "package": "dev.playhunter.ghosttactoe",
-      "versionCode": 1,
+      "versionCode": 3,
       "permissions": [],
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/icon.png"
     },
     "scheme": "ghost-tac-toe",
     "plugins": [
       "expo-router",
-      "@bam.tech/react-native-keyevent-expo-config-plugin",
-      "expo-localization",
-      ["./plugins/withGPGS", { "projectId": "PLACEHOLDER_GPGS_PROJECT_ID" }]
+      "expo-localization"
     ],
     "updates": {
       "fallbackToCacheTimeout": 0
@@ -50,6 +47,9 @@
       "eas": {
         "projectId": "005595bc-73ad-48c6-a977-cc8f874b1e98"
       }
+    },
+    "experiments": {
+      "baseUrl": "/ghost-tac-toe"
     },
     "owner": "jamesbob85"
   }

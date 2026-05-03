@@ -22,7 +22,6 @@ import { PlayerBadge } from '../src/components/game/PlayerBadge';
 import { GhostQueue } from '../src/components/game/GhostQueue';
 import { GameOverModal } from '../src/components/ui/Modal';
 import { recordGameResult } from '../src/store/statsStore';
-import { checkAchievements, GameResult } from '../src/services/achievements';
 
 export default function GameScreen() {
   const router = useRouter();
@@ -123,21 +122,7 @@ export default function GameScreen() {
         soundRef.current.play('draw');
       }
 
-      recordGameResult(settings.mode, settings.difficulty, state.winner).then((stats) => {
-        // Check achievements after recording stats
-        const gameResult: GameResult = {
-          mode: settings.mode,
-          difficulty: settings.difficulty,
-          winner: state.winner,
-          playerSide: 'X',
-          ghostMode: settings.ghostMode,
-          chaosMode: settings.chaosMode,
-          chaosCellInWinLine: !!(state.winLine && state.chaosCell !== null && state.winLine.includes(state.chaosCell)),
-          turnNumber: state.turnNumber,
-          winStreak: stats.winStreak,
-        };
-        checkAchievements(gameResult, null).catch(() => {});
-      }).catch(() => {});
+      recordGameResult(settings.mode, settings.difficulty, state.winner).catch(() => {});
 
       if (modalTimerRef.current) clearTimeout(modalTimerRef.current);
       modalTimerRef.current = setTimeout(() => setShowModal(true), 600);

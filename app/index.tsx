@@ -18,7 +18,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { COLORS, FONT_SIZES, RADIUS, SPACING, SPRING, TIMING, PALETTE, glowShadow } from '../src/constants/theme';
+import { COLORS, FONT_SIZES, RADIUS, SPACING, SPRING, TIMING, glowShadow } from '../src/constants/theme';
 import { Button } from '../src/components/ui/Button';
 import { Difficulty, GameMode } from '../src/types/game';
 import { useLayout } from '../src/hooks/useLayout';
@@ -148,16 +148,6 @@ export default function HomeScreen() {
           style={styles.playBtn}
         />
 
-        {/* Online Play */}
-        <TouchableOpacity
-          style={styles.onlineBtn}
-          onPress={() => router.push('/online')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.onlineBtnText}>🌐 Play Online</Text>
-          <Text style={styles.onlineBtnSub}>Ranked matches & leaderboards</Text>
-        </TouchableOpacity>
-
         {/* Footer nav */}
         <View style={styles.footer}>
           <TouchableOpacity onPress={() => router.push('/scores')} style={styles.footerBtn}>
@@ -174,15 +164,16 @@ export default function HomeScreen() {
 
 // ─── Sub-components ──────────────────────────────────────────────────
 
-function SegmentButton({ label, isActive, onPress }: { label: string; isActive: boolean; onPress: () => void }) {
+function SegmentButton({ label, isActive, onPress, accentColor }: { label: string; isActive: boolean; onPress: () => void; accentColor?: string }) {
   const tapScale = useSharedValue(1);
+  const color = accentColor || COLORS.playerX;
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: tapScale.value }],
   }));
 
   return (
     <AnimatedTouchable
-      style={[styles.segment, isActive && styles.segmentActive, isActive && glowShadow(COLORS.playerX, 0.2), animStyle]}
+      style={[styles.segment, isActive && { backgroundColor: color }, isActive && glowShadow(color, 0.2), animStyle]}
       onPress={onPress}
       onPressIn={() => { tapScale.value = withTiming(0.95, { duration: 80 }); }}
       onPressOut={() => { tapScale.value = withSpring(1, SPRING.bounce); }}
@@ -284,9 +275,6 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     alignItems: 'center',
   },
-  segmentActive: {
-    backgroundColor: COLORS.playerX,
-  },
   segmentText: {
     fontSize: FONT_SIZES.md,
     fontWeight: '600',
@@ -354,27 +342,6 @@ const styles = StyleSheet.create({
   playBtn: {
     marginTop: SPACING.sm,
     marginBottom: SPACING.md,
-  },
-  onlineBtn: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderTopWidth: 3,
-    borderTopColor: PALETTE.mint.full,
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-  },
-  onlineBtnText: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: '700',
-    color: PALETTE.mint.full,
-  },
-  onlineBtnSub: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    marginTop: 2,
   },
   footer: {
     flexDirection: 'row',

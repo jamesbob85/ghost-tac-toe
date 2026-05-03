@@ -1,29 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { Board } from '../types/game';
-
-// Android KeyEvent key codes
-const KEY_MAP: Record<number, string> = {
-  // Arrow keys / D-pad (same codes)
-  19: 'UP',
-  20: 'DOWN',
-  21: 'LEFT',
-  22: 'RIGHT',
-  // WASD
-  51: 'UP',     // W
-  29: 'LEFT',   // A
-  47: 'DOWN',   // S
-  32: 'RIGHT',  // D
-  // Confirm
-  66: 'CONFIRM', // Enter
-  62: 'CONFIRM', // Space
-  96: 'CONFIRM', // Gamepad A / Cross
-  // Back
-  111: 'BACK',   // Escape
-  97: 'BACK',    // Gamepad B / Circle
-  // New game
-  46: 'NEW_GAME', // R
-  100: 'NEW_GAME', // Gamepad Y / Triangle
-};
 
 export type InputMode = 'touch' | 'keyboard';
 
@@ -38,16 +15,24 @@ interface UseInputOptions {
 interface UseInputResult {
   focusedCell: number | null;
   inputMode: InputMode;
-  /** Call this on any touch/press event to switch back to touch mode */
   onTouchInteraction: () => void;
 }
 
-/**
- * Unified input hook for keyboard, controller, and touch.
- *
- * Manages a cursor (focusedCell) for keyboard/controller navigation.
- * Cursor is invisible until the first key press, and hides on touch.
- */
+const KEY_MAP: Record<string, 'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'CONFIRM' | 'BACK' | 'NEW_GAME'> = {
+  ArrowUp: 'UP',
+  ArrowDown: 'DOWN',
+  ArrowLeft: 'LEFT',
+  ArrowRight: 'RIGHT',
+  w: 'UP', W: 'UP',
+  a: 'LEFT', A: 'LEFT',
+  s: 'DOWN', S: 'DOWN',
+  d: 'RIGHT', D: 'RIGHT',
+  Enter: 'CONFIRM',
+  ' ': 'CONFIRM',
+  Escape: 'BACK',
+  r: 'NEW_GAME', R: 'NEW_GAME',
+};
+
 export function useInput({
   onCellSelect,
   onBack,
@@ -58,7 +43,6 @@ export function useInput({
   const [focusedCell, setFocusedCell] = useState<number | null>(null);
   const [inputMode, setInputMode] = useState<InputMode>('touch');
 
-  // Use refs for callbacks to avoid re-registering the listener
   const onCellSelectRef = useRef(onCellSelect);
   onCellSelectRef.current = onCellSelect;
   const onBackRef = useRef(onBack);
@@ -73,19 +57,13 @@ export function useInput({
   focusedCellRef.current = focusedCell;
 
   useEffect(() => {
-    let KeyEvent: any = null;
-    try {
-      KeyEvent = require('react-native-keyevent').default;
-    } catch {
-      // Module not available (e.g., Expo Go). Input will be touch-only.
-      return;
-    }
+    if (Platform.OS !== 'web') return;
 
-    const handleKeyDown = (event: { keyCode: number }) => {
-      const action = KEY_MAP[event.keyCode];
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const action = KEY_MAP[event.key];
       if (!action) return;
 
-      // Switch to keyboard mode on any mapped key
+      event.preventDefault();
       setInputMode('keyboard');
 
       if (action === 'BACK') {
@@ -106,9 +84,8 @@ export function useInput({
         return;
       }
 
-      // Directional navigation
       setFocusedCell((prev) => {
-        const current = prev ?? 4; // start at center if no focus
+        const current = prev ?? 4;
         const row = Math.floor(current / 3);
         const col = current % 3;
 
@@ -126,11 +103,8 @@ export function useInput({
       });
     };
 
-    KeyEvent.onKeyDownListener(handleKeyDown);
-
-    return () => {
-      KeyEvent.removeKeyDownListener(handleKeyDown);
-    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const onTouchInteraction = useCallback(() => {
