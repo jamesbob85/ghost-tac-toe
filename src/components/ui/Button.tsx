@@ -6,6 +6,7 @@ import {
   TextStyle,
   ActivityIndicator,
   TouchableOpacity,
+  View,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -13,7 +14,14 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { COLORS, RADIUS, SPACING, FONT_SIZES, SPRING, glowShadow } from '../../constants/theme';
+import {
+  COLORS,
+  FONTS,
+  FONT_SIZES,
+  SPACING,
+  SPRING,
+  BORDERS,
+} from '../../constants/theme';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -30,6 +38,33 @@ interface ButtonProps {
   fullWidth?: boolean;
 }
 
+const VARIANT_STYLES: Record<Variant, { bg: string; border: string; text: string; ornament: string }> = {
+  primary: {
+    bg: COLORS.playerX,
+    border: COLORS.playerX,
+    text: COLORS.background,
+    ornament: COLORS.background,
+  },
+  secondary: {
+    bg: COLORS.background,
+    border: COLORS.rule,
+    text: COLORS.textPrimary,
+    ornament: COLORS.textBrass,
+  },
+  ghost: {
+    bg: 'transparent',
+    border: 'transparent',
+    text: COLORS.textBrass,
+    ornament: COLORS.textBrass,
+  },
+  danger: {
+    bg: COLORS.background,
+    border: COLORS.danger,
+    text: COLORS.danger,
+    ornament: COLORS.danger,
+  },
+};
+
 export function Button({
   label,
   onPress,
@@ -41,49 +76,56 @@ export function Button({
   fullWidth = false,
 }: ButtonProps) {
   const tapScale = useSharedValue(1);
+  const tapOffset = useSharedValue(0);
 
   const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: tapScale.value }],
+    transform: [{ scale: tapScale.value }, { translateY: tapOffset.value }],
   }));
 
   const handlePressIn = () => {
-    tapScale.value = withTiming(0.95, { duration: 80 });
+    tapScale.value = withTiming(0.98, { duration: 70 });
+    tapOffset.value = withTiming(1, { duration: 70 });
   };
 
   const handlePressOut = () => {
-    tapScale.value = withSpring(1, SPRING.bounce);
+    tapScale.value = withSpring(1, SPRING.snappy);
+    tapOffset.value = withSpring(0, SPRING.snappy);
   };
 
-  const containerStyle = [
-    styles.base,
-    styles[variant],
-    variant === 'primary' && glowShadow(COLORS.playerX, 0.25),
-    fullWidth && styles.fullWidth,
-    (disabled || loading) && styles.disabled,
-    style,
-  ];
+  const v = VARIANT_STYLES[variant];
 
   return (
     <AnimatedTouchable
-      style={[containerStyle, animStyle]}
+      style={[
+        styles.base,
+        {
+          backgroundColor: v.bg,
+          borderColor: v.border,
+          borderWidth: variant === 'ghost' ? 0 : BORDERS.rule,
+        },
+        variant === 'ghost' && styles.ghostBase,
+        fullWidth && styles.fullWidth,
+        (disabled || loading) && styles.disabled,
+        style,
+        animStyle,
+      ]}
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled || loading}
-      activeOpacity={0.85}
+      activeOpacity={1}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: disabled || loading }}
     >
       {loading ? (
-        <ActivityIndicator
-          color={variant === 'primary' ? COLORS.white : COLORS.playerX}
-          size="small"
-        />
+        <ActivityIndicator color={v.text} size="small" />
       ) : (
-        <Text style={[styles.text, styles[`${variant}Text`], textStyle]}>
-          {label}
-        </Text>
+        <View style={styles.inner}>
+          <Text style={[styles.ornament, { color: v.ornament }]}>❦</Text>
+          <Text style={[styles.text, { color: v.text }, textStyle]}>{label}</Text>
+          <Text style={[styles.ornament, { color: v.ornament }]}>❦</Text>
+        </View>
       )}
     </AnimatedTouchable>
   );
@@ -93,48 +135,34 @@ const styles = StyleSheet.create({
   base: {
     paddingVertical: SPACING.sm + 4,
     paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
+    minHeight: 54,
+  },
+  ghostBase: {
+    paddingVertical: SPACING.xs,
+    minHeight: 36,
   },
   fullWidth: {
     width: '100%',
   },
-  primary: {
-    backgroundColor: COLORS.playerX,
-  },
-  secondary: {
-    backgroundColor: COLORS.surfaceElevated,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: COLORS.playerX,
-  },
-  danger: {
-    backgroundColor: COLORS.danger,
-  },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.4,
+  },
+  inner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm + 2,
   },
   text: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontFamily: FONTS.display,
+    fontSize: FONT_SIZES.md + 2,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
-  primaryText: {
-    color: COLORS.white,
-  },
-  secondaryText: {
-    color: COLORS.textPrimary,
-  },
-  ghostText: {
-    color: COLORS.playerX,
-  },
-  dangerText: {
-    color: COLORS.white,
+  ornament: {
+    fontFamily: FONTS.display,
+    fontSize: FONT_SIZES.sm,
+    opacity: 0.7,
   },
 });

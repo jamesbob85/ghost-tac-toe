@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { GameState, Player } from '../../types/game';
 import { Cell } from './Cell';
 import { WinLine } from './WinLine';
-import { COLORS, RADIUS, LIFT_SHADOW } from '../../constants/theme';
+import { COLORS, BORDERS, PAPER_SHADOW } from '../../constants/theme';
 import { MAX_MARKS } from '../../constants/gameConfig';
 
 interface BoardProps {
@@ -11,9 +11,7 @@ interface BoardProps {
   onCellPress: (index: number) => void;
   disabled: boolean;
   boardWidth: number;
-  /** Keyboard/controller focused cell index, null if none */
   focusedCell?: number | null;
-  /** Called when a touch event occurs on any cell (to switch input mode) */
   onTouchInteraction?: () => void;
 }
 
@@ -40,59 +38,66 @@ export function Board({
       ? currentPlayerMarks[0].index
       : null;
 
-  const rows = [0, 1, 2];
-  const cols = [0, 1, 2];
-
   return (
-    <View style={[styles.container, { width: boardWidth }]}>
-      <View style={[styles.grid, LIFT_SHADOW]}>
-        {rows.map((row) => (
-          <View key={row} style={styles.row}>
-            {cols.map((col) => {
-              const index = row * 3 + col;
-              const cell = board[index];
-              return (
-                <Cell
-                  key={index}
-                  index={index}
-                  value={cell}
-                  markAge={cell !== null && ghostMode ? (markAgeMap.get(index) ?? null) : null}
-                  isWinCell={winLine ? winLine.includes(index) : false}
-                  isChaosCell={chaosCell === index}
-                  isEvicting={evictingIndex === index}
-                  isFocused={focusedCell === index}
-                  onPress={onCellPress}
-                  onTouchStart={onTouchInteraction}
-                  disabled={disabled || phase !== 'playing'}
-                  boardWidth={boardWidth}
-                />
-              );
-            })}
+    <View style={[styles.frame, { width: boardWidth, height: boardWidth }]}>
+      {/* Outer double-rule frame: thick line, paper gap, thin line */}
+      <View style={[styles.outerRule, { width: boardWidth, height: boardWidth }]}>
+        <View style={[styles.innerRule, PAPER_SHADOW]}>
+          <View style={styles.grid}>
+            {[0, 1, 2].map((row) => (
+              <View key={row} style={styles.row}>
+                {[0, 1, 2].map((col) => {
+                  const index = row * 3 + col;
+                  const cell = board[index];
+                  return (
+                    <Cell
+                      key={index}
+                      index={index}
+                      value={cell}
+                      markAge={cell !== null && ghostMode ? (markAgeMap.get(index) ?? null) : null}
+                      isWinCell={winLine ? winLine.includes(index) : false}
+                      isChaosCell={chaosCell === index}
+                      isEvicting={evictingIndex === index}
+                      isFocused={focusedCell === index}
+                      isLastRow={row === 2}
+                      isLastCol={col === 2}
+                      onPress={onCellPress}
+                      onTouchStart={onTouchInteraction}
+                      disabled={disabled || phase !== 'playing'}
+                      boardWidth={boardWidth}
+                    />
+                  );
+                })}
+              </View>
+            ))}
           </View>
-        ))}
+        </View>
       </View>
 
-      <WinLine
-        winLine={winLine}
-        winner={state.winner}
-        boardSize={boardWidth}
-      />
+      <WinLine winLine={winLine} winner={state.winner} boardSize={boardWidth} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  frame: {
     position: 'relative',
-    aspectRatio: 1,
+  },
+  outerRule: {
+    borderWidth: BORDERS.thick,
+    borderColor: COLORS.rule,
+    padding: BORDERS.doubleGap,
+    backgroundColor: COLORS.background,
+  },
+  innerRule: {
+    flex: 1,
+    borderWidth: BORDERS.hairline,
+    borderColor: COLORS.rule,
+    backgroundColor: COLORS.background,
   },
   grid: {
     flex: 1,
     flexDirection: 'column',
-    backgroundColor: COLORS.background,
-    borderRadius: RADIUS.lg,
-    overflow: 'hidden',
-    padding: 3,
   },
   row: {
     flex: 1,

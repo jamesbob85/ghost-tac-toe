@@ -2,7 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MarkEntry, Player } from '../../types/game';
 import { useTranslation } from 'react-i18next';
-import { COLORS, FONT_SIZES, RADIUS, SPACING, glowShadow } from '../../constants/theme';
+import {
+  COLORS,
+  FONTS,
+  FONT_SIZES,
+  SPACING,
+  BORDERS,
+  ROMAN,
+} from '../../constants/theme';
 import { MAX_MARKS } from '../../constants/gameConfig';
 
 interface GhostQueueProps {
@@ -11,51 +18,70 @@ interface GhostQueueProps {
   isVisible: boolean;
 }
 
-const AGE_OPACITIES = [0.35, 0.65, 1.0];
-const ROW_COL_LABELS = ['A1','B1','C1','A2','B2','C2','A3','B3','C3'];
+const AGE_OPACITIES = [0.32, 0.62, 1.0];
+const COL_LABELS = ['a', 'b', 'c'];
+
+function coordLabel(index: number): string {
+  return `${COL_LABELS[index % 3]}${Math.floor(index / 3) + 1}`;
+}
 
 export function GhostQueue({ player, marks, isVisible }: GhostQueueProps) {
   const { t } = useTranslation();
   if (!isVisible) return null;
 
-  const color = player === 'X' ? COLORS.playerX : COLORS.playerO;
-  const dimColor = player === 'X' ? COLORS.playerXDim : COLORS.playerODim;
+  const inkColor = player === 'X' ? COLORS.playerX : COLORS.playerO;
+  const wash = player === 'X' ? COLORS.playerXDim : COLORS.playerODim;
 
   const slots = Array(MAX_MARKS).fill(null).map((_, i) => marks[i] ?? null);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>
-        {player === 'X' ? '🟣' : '🟢'} {t('game.nextToVanish')}
+      <View style={styles.headerRow}>
+        <View style={styles.rule} />
+        <Text style={styles.eyebrow}>STAMP CHRONICLE — STAMP {player}</Text>
+        <View style={styles.rule} />
+      </View>
+      <Text style={styles.subtitle}>
+        {t('game.nextToVanish')}
       </Text>
+
       <View style={styles.slots}>
         {slots.map((mark, i) => {
-          const opacity = mark ? AGE_OPACITIES[i] : 0.15;
+          const opacity = mark ? AGE_OPACITIES[i] : 1;
           const isOldest = i === 0 && marks.length >= MAX_MARKS;
 
           return (
-            <View
-              key={i}
-              style={[
-                styles.slot,
-                {
-                  borderColor: color,
-                  backgroundColor: mark ? dimColor : COLORS.surface,
-                  opacity,
-                },
-                isOldest && mark && glowShadow(color, 0.3),
-              ]}
-            >
-              {isOldest && mark && (
-                <View style={[styles.vanishIndicator, { backgroundColor: color }]} />
-              )}
-              <Text style={[styles.markText, { color }]}>
-                {mark ? player : '·'}
-              </Text>
-              {mark && (
-                <Text style={[styles.posLabel, { color }]}>
-                  {ROW_COL_LABELS[mark.index]}
+            <View key={i} style={styles.slotColumn}>
+              <Text style={styles.numeral}>{ROMAN[i]}</Text>
+              <View
+                style={[
+                  styles.slot,
+                  {
+                    borderColor: mark ? inkColor : COLORS.border,
+                    backgroundColor: mark ? wash : 'transparent',
+                  },
+                  isOldest && styles.slotEvicting,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.markText,
+                    { color: mark ? inkColor : COLORS.textMuted, opacity },
+                  ]}
+                >
+                  {mark ? (player === 'X' ? '✕' : '◯') : '·'}
                 </Text>
+              </View>
+              <Text
+                style={[
+                  styles.coord,
+                  mark && { color: inkColor, opacity: 0.8 },
+                ]}
+              >
+                {mark ? coordLabel(mark.index) : '—'}
+              </Text>
+              {isOldest && (
+                <Text style={[styles.warn, { color: inkColor }]}>NEXT</Text>
               )}
             </View>
           );
@@ -69,46 +95,75 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     paddingVertical: SPACING.sm,
-    gap: SPACING.xs,
+    gap: 6,
   },
-  label: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  rule: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+    maxWidth: 60,
+  },
+  eyebrow: {
+    fontFamily: FONTS.mono,
     fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
+    color: COLORS.textPrimary,
+    letterSpacing: 1.8,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+  },
+  subtitle: {
+    fontFamily: FONTS.body,
+    fontStyle: 'italic',
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
   },
   slots: {
     flexDirection: 'row',
-    gap: SPACING.sm,
+    gap: SPACING.md,
+    marginTop: 4,
+  },
+  slotColumn: {
+    alignItems: 'center',
+    width: 56,
+    gap: 2,
+  },
+  numeral: {
+    fontFamily: FONTS.display,
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textBrass,
+    letterSpacing: 1.4,
   },
   slot: {
-    width: 52,
-    height: 52,
-    borderRadius: RADIUS.md,
-    borderWidth: 2,
+    width: 48,
+    height: 48,
+    borderWidth: BORDERS.hairline,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
+  },
+  slotEvicting: {
+    borderWidth: BORDERS.rule,
+    borderStyle: 'dashed',
   },
   markText: {
+    fontFamily: FONTS.display,
     fontSize: FONT_SIZES.xl,
-    fontWeight: '900',
   },
-  posLabel: {
+  coord: {
+    fontFamily: FONTS.mono,
     fontSize: FONT_SIZES.xs - 1,
-    fontWeight: '600',
-    position: 'absolute',
-    bottom: 2,
-    right: 4,
-    opacity: 0.7,
+    color: COLORS.textMuted,
+    letterSpacing: 0.6,
   },
-  vanishIndicator: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  warn: {
+    fontFamily: FONTS.mono,
+    fontSize: 9,
+    letterSpacing: 1.6,
+    marginTop: 1,
   },
 });

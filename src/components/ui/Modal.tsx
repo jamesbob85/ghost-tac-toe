@@ -13,7 +13,16 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
-import { COLORS, RADIUS, SPACING, FONT_SIZES, SPRING, TIMING, glowShadow } from '../../constants/theme';
+import {
+  COLORS,
+  FONTS,
+  SPACING,
+  FONT_SIZES,
+  SPRING,
+  TIMING,
+  BORDERS,
+  PAPER_SHADOW,
+} from '../../constants/theme';
 import { Button } from './Button';
 import { Player } from '../../types/game';
 
@@ -37,97 +46,103 @@ export function GameOverModal({
   onGoHome,
 }: GameOverModalProps) {
   const { t } = useTranslation();
-  const translateY = useSharedValue(300);
+  const translateY = useSharedValue(40);
   const opacity = useSharedValue(0);
-  const emojiScale = useSharedValue(0);
+  const sealScale = useSharedValue(0);
 
   useEffect(() => {
     if (visible) {
       opacity.value = withTiming(1, TIMING.fadeIn);
       translateY.value = withSpring(0, SPRING.gentle);
-      emojiScale.value = withSpring(1, SPRING.bounce);
+      sealScale.value = withSpring(1, SPRING.stamp);
     } else {
       opacity.value = withTiming(0, TIMING.fadeOut);
-      translateY.value = withTiming(300, TIMING.fadeIn);
-      emojiScale.value = withTiming(0, TIMING.fadeOut);
+      translateY.value = withTiming(40, TIMING.fadeIn);
+      sealScale.value = withTiming(0, TIMING.fadeOut);
     }
   }, [visible]);
 
   const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const sheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
   }));
-  const emojiStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: emojiScale.value }],
+  const sealStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: sealScale.value }, { rotate: '-7deg' }],
   }));
 
-  const getTitle = () => {
-    if (winner === null) return t('modal.itsADraw');
-    if (isAIMode) return winner === 'X' ? t('modal.youWin') : t('modal.aiWins');
-    return t('modal.playerWins', { player: winner });
-  };
+  const inkColor = winner === null
+    ? COLORS.textBrass
+    : winner === 'X' ? COLORS.playerX : COLORS.playerO;
 
-  const getTitleColor = () => {
-    if (winner === null) return COLORS.textSecondary;
-    return winner === 'X' ? COLORS.playerX : COLORS.playerO;
-  };
+  const headline = winner === null
+    ? 'AN UNRESOLVED MATTER'
+    : isAIMode
+      ? (winner === 'X' ? 'TRIUMPH OVER THE MACHINE' : 'THE MACHINE PREVAILS')
+      : (winner === 'X' ? 'STAMP X CARRIES THE DAY' : 'STAMP O CARRIES THE DAY');
 
-  const getEmoji = () => {
-    if (winner === null) return '🤝';
-    if (isAIMode) return winner === 'X' ? '🏆' : '💀';
-    return winner === 'X' ? '🟣' : '🟢';
-  };
-
-  const getGlow = () => {
-    if (winner === 'X') return glowShadow(COLORS.playerX, 0.4);
-    if (winner === 'O') return glowShadow(COLORS.playerO, 0.4);
-    return {};
-  };
+  const sealGlyph = winner === null ? '⁂' : winner === 'X' ? '✕' : '◯';
 
   return (
-    <RNModal visible={visible} transparent animationType="none">
+    <RNModal visible={visible} transparent animationType="none" onRequestClose={onGoHome}>
       <Animated.View style={[styles.backdrop, backdropStyle]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onPlayAgain} />
-        <Animated.View style={[styles.sheet, getGlow(), sheetStyle]}>
-          <Animated.Text style={[styles.emoji, emojiStyle]}>{getEmoji()}</Animated.Text>
-          <Text style={[styles.title, { color: getTitleColor() }]}>
-            {getTitle()}
-          </Text>
-
-          <View style={styles.scoreRow}>
-            <View style={styles.scoreBox}>
-              <Text style={[styles.scoreLabel, { color: COLORS.playerX }]}>
-                {isAIMode ? t('game.you') : t('game.playerX')}
-              </Text>
-              <Text style={[styles.scoreValue, { color: COLORS.playerX }]}>
-                {scoreX}
-              </Text>
+        <Animated.View style={[styles.sheet, PAPER_SHADOW, sheetStyle]}>
+          <View style={styles.frame}>
+            <View style={styles.eyebrowRow}>
+              <View style={styles.rule} />
+              <Text style={styles.eyebrow}>EXTRA · DISPATCH FROM THE PARLOR</Text>
+              <View style={styles.rule} />
             </View>
-            <Text style={styles.scoreDivider}>{t('modal.vs')}</Text>
-            <View style={styles.scoreBox}>
-              <Text style={[styles.scoreLabel, { color: COLORS.playerO }]}>
-                {isAIMode ? t('game.ai') : t('game.playerO')}
-              </Text>
-              <Text style={[styles.scoreValue, { color: COLORS.playerO }]}>
-                {scoreO}
-              </Text>
-            </View>
-          </View>
 
-          <View style={styles.buttons}>
-            <Button
-              label={t('modal.playAgain')}
-              onPress={onPlayAgain}
-              variant="primary"
-              fullWidth
-            />
-            <Button
-              label={t('modal.mainMenu')}
-              onPress={onGoHome}
-              variant="secondary"
-              fullWidth
-              style={styles.menuButton}
-            />
+            <Text style={[styles.headline, { color: inkColor }]}>
+              {headline}
+            </Text>
+
+            <Animated.Text style={[styles.seal, { color: inkColor }, sealStyle]}>
+              {sealGlyph}
+            </Animated.Text>
+
+            <View style={styles.scoreboard}>
+              <View style={styles.scoreCol}>
+                <Text style={[styles.scoreLabel, { color: COLORS.playerX }]}>
+                  {isAIMode ? t('game.you') : t('game.playerX')}
+                </Text>
+                <Text style={[styles.scoreValue, { color: COLORS.playerX }]}>
+                  {scoreX}
+                </Text>
+              </View>
+              <Text style={styles.scoreVs}>vs.</Text>
+              <View style={styles.scoreCol}>
+                <Text style={[styles.scoreLabel, { color: COLORS.playerO }]}>
+                  {isAIMode ? t('game.ai') : t('game.playerO')}
+                </Text>
+                <Text style={[styles.scoreValue, { color: COLORS.playerO }]}>
+                  {scoreO}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.ornamentRow}>
+              <View style={styles.rule} />
+              <Text style={styles.ornament}>❦</Text>
+              <View style={styles.rule} />
+            </View>
+
+            <View style={styles.buttons}>
+              <Button
+                label={t('modal.playAgain')}
+                onPress={onPlayAgain}
+                variant="primary"
+                fullWidth
+              />
+              <Button
+                label={t('modal.mainMenu')}
+                onPress={onGoHome}
+                variant="secondary"
+                fullWidth
+              />
+            </View>
           </View>
         </Animated.View>
       </Animated.View>
@@ -139,58 +154,102 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: COLORS.overlay,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.md,
   },
   sheet: {
-    backgroundColor: COLORS.surface,
-    borderTopLeftRadius: RADIUS.xl,
-    borderTopRightRadius: RADIUS.xl,
-    padding: SPACING.xl,
-    paddingBottom: SPACING.xl + 16,
+    width: '100%',
+    maxWidth: 460,
+    backgroundColor: COLORS.background,
+    borderWidth: BORDERS.thick,
+    borderColor: COLORS.rule,
+    padding: BORDERS.doubleGap,
+  },
+  frame: {
+    borderWidth: BORDERS.hairline,
+    borderColor: COLORS.rule,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderColor: COLORS.borderFocus,
   },
-  emoji: {
-    fontSize: 64,
-    marginBottom: SPACING.sm,
-  },
-  title: {
-    fontSize: FONT_SIZES['2xl'],
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    marginBottom: SPACING.lg,
-  },
-  scoreRow: {
+  eyebrowRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.lg,
-    marginBottom: SPACING.xl,
+    gap: SPACING.sm,
+    width: '100%',
+    marginBottom: SPACING.md,
   },
-  scoreBox: {
+  rule: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.rule,
+  },
+  eyebrow: {
+    fontFamily: FONTS.mono,
+    fontSize: FONT_SIZES.xs - 1,
+    letterSpacing: 2.4,
+    color: COLORS.textPrimary,
+    textTransform: 'uppercase',
+  },
+  headline: {
+    fontFamily: FONTS.display,
+    fontSize: FONT_SIZES['2xl'],
+    lineHeight: FONT_SIZES['2xl'] * 1.05,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    marginBottom: SPACING.md,
+  },
+  seal: {
+    fontFamily: FONTS.display,
+    fontSize: 64,
+    lineHeight: 64,
+    marginBottom: SPACING.md,
+    opacity: 0.85,
+  },
+  scoreboard: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: SPACING.lg,
+    marginBottom: SPACING.md,
+  },
+  scoreCol: {
     alignItems: 'center',
+    minWidth: 80,
   },
   scoreLabel: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontFamily: FONTS.mono,
+    fontSize: FONT_SIZES.xs,
+    letterSpacing: 1.8,
     textTransform: 'uppercase',
-    letterSpacing: 1,
     marginBottom: 4,
   },
   scoreValue: {
+    fontFamily: FONTS.display,
     fontSize: FONT_SIZES['3xl'],
-    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    lineHeight: FONT_SIZES['3xl'],
   },
-  scoreDivider: {
-    fontSize: FONT_SIZES.md,
+  scoreVs: {
+    fontFamily: FONTS.body,
+    fontStyle: 'italic',
+    fontSize: FONT_SIZES.lg,
     color: COLORS.textMuted,
-    fontWeight: '600',
+  },
+  ornamentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    width: '100%',
+    marginBottom: SPACING.md,
+  },
+  ornament: {
+    fontFamily: FONTS.display,
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textBrass,
   },
   buttons: {
     width: '100%',
     gap: SPACING.sm,
-  },
-  menuButton: {
-    marginTop: 0,
   },
 });

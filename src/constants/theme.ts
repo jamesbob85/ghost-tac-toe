@@ -1,127 +1,204 @@
 /**
- * Ghost Tac Toe — PlayHunter "Arcade Night" Theme
+ * Ghost Tac Toe — "Occult Times" theme
  *
- * Warm, tactile, alive. Based on the shared PlayHunter design system.
- * Game accent pair: Violet (player X) + Mint (player O)
- * Special accent: Marigold (chaos mode)
+ * A haunted 1920s tabloid newspaper. Cream parchment, ink stamps, brass leaf.
+ * Marks fade like ink on aging paper. Earnest seriousness about silly subjects.
  */
 
-// ─── Foundation Colors ───────────────────────────────────────────────
-const FOUNDATION = {
-  background:      '#110f1a',
-  surface:         '#1c1929',
-  surfaceElevated: '#282438',
-  surfaceBright:   '#332e47',
-  border:          '#352f48',
-  borderFocus:     '#4a3f6b',
+// ─── Palette ─────────────────────────────────────────────────────────
+// Newspaper paper, hand-mixed inks, tarnished brass.
+const INK = {
+  paper:        '#f0e6d2',
+  paperDeep:    '#e6d8b8',
+  paperShade:   '#d9c89b',
+  paperDark:    '#c8b890',
+
+  inkBlack:     '#1a1611',
+  inkFaded:     '#5a4a35',
+  inkGhost:     '#9a8a6a',
+  inkHairline:  '#b5a473',
+
+  oxblood:      '#8b1e2d',
+  oxbloodDeep:  '#5e1320',
+  oxbloodPale:  '#c89a9f',
+
+  inkTeal:      '#1a4754',
+  inkTealDeep:  '#0d2e38',
+  inkTealPale:  '#9eb6bc',
+
+  brass:        '#b8924d',
+  brassDeep:    '#8b6b30',
+  brassPale:    '#d9c08a',
+
+  chaosGold:    '#d4a847',
+  chaosBurnt:   '#a3471f',
 };
 
-// ─── PlayHunter Palette ──────────────────────────────────────────────
 export const PALETTE = {
-  coral:    { full: '#ff6b6b', light: '#ff9b9b', dim: '#3d1c1c' },
-  mint:     { full: '#4ecdc4', light: '#7eddd6', dim: '#163532' },
-  marigold: { full: '#ffd93d', light: '#ffe680', dim: '#3d3510' },
-  violet:   { full: '#a78bfa', light: '#c4b5fd', dim: '#2d2152' },
-  sky:      { full: '#38bdf8', light: '#7dd3fc', dim: '#132f42' },
-  rose:     { full: '#f472b6', light: '#f9a8d4', dim: '#3d1530' },
+  oxblood:  { full: INK.oxblood,   pale: INK.oxbloodPale,   deep: INK.oxbloodDeep },
+  inkTeal:  { full: INK.inkTeal,   pale: INK.inkTealPale,   deep: INK.inkTealDeep },
+  brass:    { full: INK.brass,     pale: INK.brassPale,     deep: INK.brassDeep },
+  chaos:    { full: INK.chaosGold, pale: '#e8cf85',         deep: INK.chaosBurnt },
 } as const;
 
-// ─── Flat COLORS (for easy migration) ────────────────────────────────
 export const COLORS = {
-  // Foundation
-  ...FOUNDATION,
+  // Foundation — the page itself
+  background:      INK.paper,
+  surface:         INK.paperDeep,
+  surfaceElevated: INK.paperDeep,
+  surfaceBright:   '#f6efdc',
+  surfaceSunken:   INK.paperShade,
+  border:          INK.inkHairline,
+  borderFocus:     INK.brassDeep,
+  rule:            INK.inkBlack,
 
-  // Game accent mapping
-  playerX:      PALETTE.violet.full,
-  playerXLight: PALETTE.violet.light,
-  playerXDim:   PALETTE.violet.dim,
+  // Player inks
+  playerX:      INK.oxblood,
+  playerXLight: INK.oxbloodPale,
+  playerXDim:   '#e8d5d3',
 
-  playerO:      PALETTE.mint.full,
-  playerOLight: PALETTE.mint.light,
-  playerODim:   PALETTE.mint.dim,
+  playerO:      INK.inkTeal,
+  playerOLight: INK.inkTealPale,
+  playerODim:   '#cfdcde',
 
-  chaos:      PALETTE.marigold.full,
-  chaosLight: PALETTE.marigold.light,
+  chaos:      INK.chaosGold,
+  chaosLight: '#ecd28a',
+  chaosDeep:  INK.chaosBurnt,
 
-  // Text
-  white:         '#ffffff',
-  textPrimary:   '#f4f0ff',
-  textSecondary: '#9b8fb8',
-  textMuted:     '#5e5278',
-  textInverse:   '#110f1a',
+  // Ink hierarchy
+  white:         INK.paper,
+  textPrimary:   INK.inkBlack,
+  textSecondary: INK.inkFaded,
+  textMuted:     INK.inkGhost,
+  textInverse:   INK.paper,
+  textBrass:     INK.brassDeep,
 
   // Semantic
-  success: '#34d399',
-  danger:  '#fb7185',
-  warning: '#fbbf24',
-  overlay: 'rgba(8, 6, 14, 0.82)',
+  success: '#2d5a3d',
+  danger:  INK.oxblood,
+  warning: INK.brassDeep,
+  overlay: 'rgba(26, 22, 17, 0.62)',
 };
 
 // ─── Typography ──────────────────────────────────────────────────────
+// Three voices: dramatic display serif, refined body serif, typewriter eyebrow.
+export const FONTS = {
+  display: '"Yeseva One", "Times New Roman", serif',     // mastheads, marks, scores
+  body:    '"Crimson Pro", "Iowan Old Style", serif',    // descriptions, paragraphs
+  mono:    '"Special Elite", "Courier New", monospace',  // eyebrows, labels, dates
+} as const;
+
 export const FONT_SIZES = {
-  xs:   11,
-  sm:   13,
-  md:   16,
-  lg:   20,
-  xl:   24,
-  '2xl': 32,
-  '3xl': 48,
-  '4xl': 64,
+  xs:    11,
+  sm:    13,
+  md:    16,
+  lg:    20,
+  xl:    26,
+  '2xl': 36,
+  '3xl': 56,
+  '4xl': 80,
 };
 
 // ─── Spacing (8px grid) ──────────────────────────────────────────────
 export const SPACING = {
-  xs:   4,
-  sm:   8,
-  md:   16,
-  lg:   24,
-  xl:   32,
+  xs:    4,
+  sm:    8,
+  md:    16,
+  lg:    24,
+  xl:    32,
   '2xl': 48,
+  '3xl': 64,
 };
 
-// ─── Border Radii (chunky & tactile) ─────────────────────────────────
+// ─── Border Radii (newspapers are square; very mild rounding) ────────
 export const RADIUS = {
-  sm:   10,
-  md:   14,
-  lg:   20,
-  xl:   28,
+  none: 0,
+  sm:   2,
+  md:   3,
+  lg:   4,
+  xl:   6,
   full: 9999,
 };
 
-// ─── Glow & Shadow Utilities ─────────────────────────────────────────
-export function glowShadow(color: string, intensity = 0.35) {
+// ─── Borders (hairlines, like printed rules) ─────────────────────────
+export const BORDERS = {
+  hairline:  1,
+  rule:      2,
+  thick:     3,
+  doubleGap: 3,
+};
+
+// ─── Shadows (paper depth, soft warm) ────────────────────────────────
+export const PAPER_SHADOW = {
+  shadowColor: '#3d2a1a',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.12,
+  shadowRadius: 6,
+  elevation: 2,
+};
+
+export const STAMP_SHADOW = {
+  shadowColor: '#3d2a1a',
+  shadowOffset: { width: 1, height: 1 },
+  shadowOpacity: 0.25,
+  shadowRadius: 0,
+  elevation: 1,
+};
+
+export const PRESSED_SHADOW = {
+  shadowColor: '#3d2a1a',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.18,
+  shadowRadius: 2,
+  elevation: 1,
+};
+
+export function inkShadow(color: string, opacity = 0.3) {
   return {
     shadowColor: color,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: intensity,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: opacity,
+    shadowRadius: 0,
+    elevation: 1,
   };
 }
 
-export const LIFT_SHADOW = {
-  shadowColor: '#000000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.3,
-  shadowRadius: 8,
-  elevation: 4,
-};
-
+// Backwards-compat shim: some old call sites still import these names.
+export const LIFT_SHADOW = PAPER_SHADOW;
+export function glowShadow(color: string, opacity = 0.3) {
+  return inkShadow(color, opacity);
+}
 export const SHADOWS = {
-  playerX: glowShadow(PALETTE.violet.full),
-  playerO: glowShadow(PALETTE.mint.full),
+  playerX: inkShadow(INK.oxblood),
+  playerO: inkShadow(INK.inkTeal),
 };
 
-// ─── Animation Presets (for react-native-reanimated) ─────────────────
+// ─── Animation (more measured — ink doesn't bounce) ──────────────────
 export const SPRING = {
-  bounce:  { damping: 12, stiffness: 180 },
-  gentle:  { damping: 18, stiffness: 120 },
-  snappy:  { damping: 15, stiffness: 250 },
+  bounce:  { damping: 14, stiffness: 200 },
+  gentle:  { damping: 20, stiffness: 110 },
+  snappy:  { damping: 18, stiffness: 280 },
+  stamp:   { damping: 16, stiffness: 320 },
 } as const;
 
 export const TIMING = {
-  fadeIn:   { duration: 200 },
-  fadeOut:  { duration: 150 },
-  quick:    { duration: 100 },
-  moderate: { duration: 300 },
+  fadeIn:   { duration: 220 },
+  fadeOut:  { duration: 180 },
+  quick:    { duration: 120 },
+  moderate: { duration: 320 },
+  slow:     { duration: 600 },
 } as const;
+
+// ─── Decorative ornaments (used between sections) ────────────────────
+export const ORNAMENTS = {
+  fleuron:    '❦',  // ❦
+  asterism:   '⁂',  // ⁂
+  bullet:     '•',
+  emDash:     '—',
+  doubleAst:  '✱',  // ✱
+  trefoil:    '❧',
+  star:       '✶',
+} as const;
+
+// ─── Roman numerals for the stamp chronicle ──────────────────────────
+export const ROMAN = ['I', 'II', 'III', 'IV', 'V'] as const;

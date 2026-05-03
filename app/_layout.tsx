@@ -19,12 +19,13 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        <StatusBar style="light" backgroundColor={COLORS.background} />
+        <StatusBar style="dark" backgroundColor={COLORS.background} />
         <Stack
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: COLORS.background },
-            animation: 'slide_from_right',
+            contentStyle: { backgroundColor: 'transparent' },
+            animation: 'fade',
+            animationDuration: 220,
           }}
         />
       </SafeAreaProvider>
@@ -35,6 +36,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: 'transparent',
   },
 });

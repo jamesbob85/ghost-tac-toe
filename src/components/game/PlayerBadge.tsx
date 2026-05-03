@@ -9,7 +9,15 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { Player } from '../../types/game';
-import { COLORS, FONT_SIZES, RADIUS, SPACING, SPRING, glowShadow } from '../../constants/theme';
+import {
+  COLORS,
+  FONTS,
+  FONT_SIZES,
+  SPACING,
+  SPRING,
+  BORDERS,
+  PAPER_SHADOW,
+} from '../../constants/theme';
 
 interface PlayerBadgeProps {
   player: Player;
@@ -19,43 +27,38 @@ interface PlayerBadgeProps {
 }
 
 export function PlayerBadge({ player, score, isActive, label }: PlayerBadgeProps) {
-  const color = player === 'X' ? COLORS.playerX : COLORS.playerO;
-  const dimColor = player === 'X' ? COLORS.playerXDim : COLORS.playerODim;
+  const inkColor = player === 'X' ? COLORS.playerX : COLORS.playerO;
+  const wash = player === 'X' ? COLORS.playerXDim : COLORS.playerODim;
 
   const scale = useSharedValue(1);
-  const glowOpacity = useSharedValue(0);
-  const dotScale = useSharedValue(0);
+  const cursor = useSharedValue(0);
 
   useEffect(() => {
     if (isActive) {
       scale.value = withSequence(
-        withTiming(1.04, { duration: 150 }),
-        withSpring(1, SPRING.bounce),
+        withTiming(1.02, { duration: 130 }),
+        withSpring(1, SPRING.gentle),
       );
-      glowOpacity.value = withRepeat(
+      cursor.value = withRepeat(
         withSequence(
-          withTiming(1, { duration: 600 }),
-          withTiming(0.3, { duration: 600 }),
+          withTiming(1, { duration: 540 }),
+          withTiming(0, { duration: 540 }),
         ),
         -1,
         false,
       );
-      dotScale.value = withSpring(1, SPRING.bounce);
     } else {
-      glowOpacity.value = withTiming(0, { duration: 200 });
+      cursor.value = withTiming(0, { duration: 200 });
       scale.value = withTiming(1, { duration: 200 });
-      dotScale.value = withTiming(0, { duration: 150 });
     }
   }, [isActive]);
 
   const containerStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    borderColor: `rgba(${player === 'X' ? '167, 139, 250' : '78, 205, 196'}, ${glowOpacity.value * 0.7})`,
   }));
 
-  const dotStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: dotScale.value }],
-    opacity: dotScale.value,
+  const cursorStyle = useAnimatedStyle(() => ({
+    opacity: cursor.value,
   }));
 
   return (
@@ -63,59 +66,81 @@ export function PlayerBadge({ player, score, isActive, label }: PlayerBadgeProps
       style={[
         styles.container,
         {
-          backgroundColor: isActive ? dimColor : COLORS.surfaceElevated,
+          backgroundColor: isActive ? wash : COLORS.surfaceBright,
+          borderColor: isActive ? inkColor : COLORS.border,
         },
-        isActive && glowShadow(color, 0.25),
+        isActive && PAPER_SHADOW,
         containerStyle,
       ]}
     >
-      <Text style={[styles.mark, { color }]}>{player}</Text>
-      <View style={styles.info}>
-        <Text style={[styles.label, { color: isActive ? COLORS.textPrimary : COLORS.textSecondary }]}>
-          {label}
+      <View style={styles.eyebrowRow}>
+        <Text style={[styles.eyebrow, { color: inkColor }]}>
+          STAMP {player}
         </Text>
-        <Text style={[styles.score, { color }]}>{score}</Text>
+        <Animated.Text style={[styles.cursor, { color: inkColor }, cursorStyle]}>▍</Animated.Text>
       </View>
-      <Animated.View style={[styles.activeDot, { backgroundColor: color }, dotStyle]} />
+      <Text style={[styles.name, { color: COLORS.textPrimary }]} numberOfLines={1}>
+        {label}
+      </Text>
+      <View style={styles.divider} />
+      <View style={styles.scoreRow}>
+        <Text style={styles.scoreCaption}>VICTORIES</Text>
+        <Text style={[styles.score, { color: inkColor }]}>{score}</Text>
+      </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
+    flex: 1,
+    paddingHorizontal: SPACING.md - 2,
     paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.lg,
-    gap: SPACING.sm,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderWidth: BORDERS.hairline,
     position: 'relative',
   },
-  mark: {
-    fontSize: FONT_SIZES['2xl'],
-    fontWeight: '900',
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
   },
-  info: {
-    flex: 1,
-  },
-  label: {
+  eyebrow: {
+    fontFamily: FONTS.mono,
     fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
+    letterSpacing: 1.6,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+  },
+  cursor: {
+    fontFamily: FONTS.mono,
+    fontSize: FONT_SIZES.sm,
+    lineHeight: FONT_SIZES.sm,
+  },
+  name: {
+    fontFamily: FONTS.body,
+    fontSize: FONT_SIZES.md,
+    fontWeight: '500',
+    fontStyle: 'italic',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 6,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  scoreCaption: {
+    fontFamily: FONTS.mono,
+    fontSize: FONT_SIZES.xs - 1,
+    color: COLORS.textMuted,
+    letterSpacing: 1.4,
   },
   score: {
+    fontFamily: FONTS.display,
     fontSize: FONT_SIZES.xl,
-    fontWeight: '800',
-  },
-  activeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    position: 'absolute',
-    top: 8,
-    right: 8,
+    fontVariant: ['tabular-nums'],
   },
 });

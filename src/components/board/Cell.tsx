@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Player } from '../../types/game';
 import { useTranslation } from 'react-i18next';
-import { COLORS, RADIUS, FONT_SIZES, SPRING, TIMING, glowShadow } from '../../constants/theme';
+import { COLORS, FONTS, SPRING, TIMING } from '../../constants/theme';
 
 interface CellProps {
   index: number;
@@ -20,16 +20,22 @@ interface CellProps {
   isChaosCell: boolean;
   isEvicting: boolean;
   isFocused: boolean;
+  isLastRow: boolean;
+  isLastCol: boolean;
   onPress: (index: number) => void;
   onTouchStart?: () => void;
   disabled: boolean;
-  /** Board width — used to scale mark font size */
   boardWidth: number;
 }
 
-const AGE_OPACITIES = [0.35, 0.65, 1.0];
+const AGE_OPACITIES = [0.30, 0.62, 1.0];
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+function rotationFor(index: number): string {
+  const deg = ((index * 31) % 11) - 5;
+  return `${deg}deg`;
+}
 
 export function Cell({
   index,
@@ -39,6 +45,8 @@ export function Cell({
   isChaosCell,
   isEvicting,
   isFocused,
+  isLastRow,
+  isLastCol,
   onPress,
   onTouchStart,
   disabled,
@@ -48,62 +56,57 @@ export function Cell({
   const [isHovered, setIsHovered] = useState(false);
   const scale = useSharedValue(0);
   const opacity = useSharedValue(0);
-  const winGlow = useSharedValue(0);
-  const chaosGlow = useSharedValue(0);
-  const focusRing = useSharedValue(0);
+  const winPulse = useSharedValue(0);
+  const chaosPulse = useSharedValue(0);
+  const focusPulse = useSharedValue(0);
 
-  const color = value === 'X' ? COLORS.playerX : value === 'O' ? COLORS.playerO : COLORS.textMuted;
+  const inkColor = value === 'X' ? COLORS.playerX : value === 'O' ? COLORS.playerO : COLORS.textMuted;
   const targetOpacity = markAge !== null ? AGE_OPACITIES[markAge] ?? 1.0 : 1.0;
+  const markFontSize = Math.round(boardWidth * 0.18);
+  const rotation = rotationFor(index);
 
-  // Scale mark font with board size (~17% of board width)
-  const markFontSize = Math.round(boardWidth * 0.17);
-
-  // Entrance animation
   useEffect(() => {
     if (value !== null) {
-      scale.value = 0;
+      scale.value = 0.4;
       opacity.value = 0;
-      scale.value = withSpring(1, SPRING.bounce);
+      scale.value = withSpring(1, SPRING.stamp);
       opacity.value = withTiming(targetOpacity, TIMING.fadeIn);
     } else {
       scale.value = withSequence(
-        withTiming(0.8, { duration: 80 }),
-        withTiming(0, { duration: 120 }),
+        withTiming(0.85, { duration: 90 }),
+        withTiming(0, { duration: 160 }),
       );
       opacity.value = withTiming(0, TIMING.fadeIn);
     }
   }, [value]);
 
-  // Age opacity update
   useEffect(() => {
     if (value !== null) {
       opacity.value = withTiming(targetOpacity, TIMING.moderate);
     }
   }, [markAge, targetOpacity]);
 
-  // Win cell glow
   useEffect(() => {
     if (isWinCell) {
-      winGlow.value = withRepeat(
+      winPulse.value = withRepeat(
         withSequence(
-          withTiming(1, { duration: 400 }),
-          withTiming(0.3, { duration: 400 }),
+          withTiming(1, { duration: 450 }),
+          withTiming(0.4, { duration: 450 }),
         ),
-        3,
+        4,
         true,
       );
     } else {
-      winGlow.value = withTiming(0, TIMING.fadeIn);
+      winPulse.value = withTiming(0, TIMING.fadeIn);
     }
   }, [isWinCell]);
 
-  // Chaos cell pulse
   useEffect(() => {
-    chaosGlow.value = isChaosCell
+    chaosPulse.value = isChaosCell
       ? withRepeat(
           withSequence(
-            withTiming(1, { duration: 500 }),
-            withTiming(0.3, { duration: 500 }),
+            withTiming(1, { duration: 700 }),
+            withTiming(0.45, { duration: 700 }),
           ),
           -1,
           true,
@@ -111,55 +114,40 @@ export function Cell({
       : withTiming(0, TIMING.moderate);
   }, [isChaosCell]);
 
-  // Focus ring (keyboard/controller cursor)
   useEffect(() => {
     if (isFocused) {
-      focusRing.value = withRepeat(
+      focusPulse.value = withRepeat(
         withSequence(
-          withTiming(1, { duration: 500 }),
-          withTiming(0.4, { duration: 500 }),
+          withTiming(1, { duration: 480 }),
+          withTiming(0.3, { duration: 480 }),
         ),
         -1,
         true,
       );
     } else {
-      focusRing.value = withTiming(0, { duration: 150 });
+      focusPulse.value = withTiming(0, { duration: 150 });
     }
   }, [isFocused]);
 
   const markStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: scale.value }, { rotate: rotation }],
     opacity: opacity.value,
   }));
 
   const winStyle = useAnimatedStyle(() => ({
-    opacity: winGlow.value,
+    opacity: winPulse.value,
   }));
 
   const chaosStyle = useAnimatedStyle(() => ({
-    opacity: chaosGlow.value,
+    opacity: chaosPulse.value,
   }));
 
   const focusStyle = useAnimatedStyle(() => ({
-    opacity: focusRing.value,
+    opacity: focusPulse.value,
   }));
 
-  const getCellBg = () => {
-    if (isWinCell) {
-      return value === 'X' ? COLORS.playerXDim : COLORS.playerODim;
-    }
-    return COLORS.surfaceElevated;
-  };
-
-  const getGlowStyle = () => {
-    if (isWinCell && value) {
-      return glowShadow(value === 'X' ? COLORS.playerX : COLORS.playerO, 0.5);
-    }
-    if (isFocused) {
-      return glowShadow(COLORS.borderFocus, 0.3);
-    }
-    return {};
-  };
+  const isMarkable = !disabled && value === null;
+  const cellBorderColor = COLORS.rule;
 
   return (
     <AnimatedPressable
@@ -167,10 +155,13 @@ export function Cell({
       onHoverOut={() => setIsHovered(false)}
       style={[
         styles.cell,
-        { backgroundColor: getCellBg() },
-        isHovered && !disabled && !value && styles.cellHovered,
-        isFocused && styles.cellFocused,
-        getGlowStyle(),
+        {
+          borderRightWidth: isLastCol ? 0 : 1,
+          borderBottomWidth: isLastRow ? 0 : 1,
+          borderColor: cellBorderColor,
+          backgroundColor: isHovered && isMarkable ? COLORS.surfaceBright : 'transparent',
+        },
+        isChaosCell && !value && styles.chaosBg,
       ]}
       onPress={() => onPress(index)}
       onTouchStart={onTouchStart}
@@ -184,118 +175,123 @@ export function Cell({
           : t('a11y.cellEmpty', { cell: index + 1 })
       }
     >
-      {/* Focus ring (keyboard/controller cursor) */}
       {isFocused && (
-        <Animated.View
-          style={[styles.focusRing, focusStyle]}
-          pointerEvents="none"
-        />
+        <Animated.View style={[styles.focusRing, focusStyle]} pointerEvents="none" />
       )}
 
-      {/* Chaos cell glow */}
-      {isChaosCell && (
-        <Animated.View
-          style={[styles.chaosGlow, chaosStyle]}
-          pointerEvents="none"
-        />
-      )}
-
-      {/* Win cell highlight */}
       {isWinCell && (
         <Animated.View
-          style={[
-            styles.winGlow,
-            { backgroundColor: value === 'X' ? COLORS.playerX : COLORS.playerO },
-            winStyle,
-          ]}
+          style={[styles.winBar, { backgroundColor: inkColor }, winStyle]}
           pointerEvents="none"
         />
       )}
 
-      {/* Mark */}
       {value && (
-        <Animated.Text style={[styles.mark, { color, fontSize: markFontSize }, markStyle]}>
-          {value}
+        <Animated.Text
+          style={[
+            styles.mark,
+            { color: inkColor, fontSize: markFontSize },
+            markStyle,
+          ]}
+        >
+          {value === 'X' ? '✕' : '◯'}
         </Animated.Text>
       )}
 
-      {/* Chaos cell indicator */}
       {isChaosCell && !value && (
-        <Animated.View style={[styles.chaosIndicator, chaosStyle]} pointerEvents="none">
-          <Text style={[styles.chaosText, { fontSize: Math.round(boardWidth * 0.08) }]}>⚡</Text>
+        <Animated.View style={[styles.chaosOrnament, chaosStyle]} pointerEvents="none">
+          <Text style={[styles.chaosGlyph, { fontSize: Math.round(boardWidth * 0.06) }]}>✶</Text>
         </Animated.View>
       )}
 
-      {/* Eviction warning dot */}
       {isEvicting && value && (
-        <View style={[styles.evictDot, { backgroundColor: color }]} />
+        <View style={styles.evictMark} pointerEvents="none">
+          <Text style={styles.evictMarkText}>†</Text>
+        </View>
+      )}
+
+      {/* Empty-cell coordinate whisper (top-left, faint) */}
+      {!value && !isChaosCell && (
+        <Text style={styles.coord}>{coordLabel(index)}</Text>
       )}
     </AnimatedPressable>
   );
 }
 
+function coordLabel(index: number): string {
+  const col = ['a', 'b', 'c'][index % 3];
+  const row = Math.floor(index / 3) + 1;
+  return `${col}${row}`;
+}
+
 const styles = StyleSheet.create({
   cell: {
     flex: 1,
-    margin: 3,
-    borderRadius: RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
-  cellHovered: {
-    backgroundColor: COLORS.surfaceBright,
-  },
-  cellFocused: {
-    backgroundColor: COLORS.surfaceBright,
+  chaosBg: {
+    backgroundColor: 'rgba(212, 168, 71, 0.13)',
   },
   mark: {
-    fontWeight: '900',
+    fontFamily: FONTS.display,
+    fontWeight: '400',
     textAlign: 'center',
+    textShadowColor: 'rgba(26, 22, 17, 0.18)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 0,
   },
   focusRing: {
     position: 'absolute',
-    top: -1,
-    bottom: -1,
-    left: -1,
-    right: -1,
-    borderRadius: RADIUS.md + 1,
-    borderWidth: 2,
-    borderColor: COLORS.borderFocus,
+    top: 4,
+    bottom: 4,
+    left: 4,
+    right: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.textBrass,
+    borderStyle: 'dashed',
   },
-  winGlow: {
+  winBar: {
     position: 'absolute',
-    top: 0,
     bottom: 0,
-    left: 0,
-    right: 0,
-    borderRadius: RADIUS.md,
+    left: '15%',
+    right: '15%',
+    height: 3,
   },
-  chaosGlow: {
+  chaosOrnament: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.chaos,
-    opacity: 0.2,
+    top: 6,
+    right: 8,
   },
-  chaosIndicator: {
+  chaosGlyph: {
+    fontFamily: FONTS.display,
+    color: COLORS.chaosDeep,
+  },
+  evictMark: {
     position: 'absolute',
+    top: 6,
+    right: 8,
+    width: 16,
+    height: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chaosText: {
-    // fontSize set dynamically
+  evictMarkText: {
+    fontFamily: FONTS.display,
+    color: COLORS.textBrass,
+    fontSize: 18,
+    lineHeight: 18,
+    opacity: 0.7,
   },
-  evictDot: {
+  coord: {
     position: 'absolute',
     top: 6,
-    right: 6,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    opacity: 0.9,
+    left: 8,
+    fontFamily: FONTS.mono,
+    fontSize: 9,
+    color: COLORS.textMuted,
+    opacity: 0.35,
+    letterSpacing: 0.5,
   },
 });

@@ -4,12 +4,18 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  I18nManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { I18nManager } from 'react-native';
-import { COLORS, FONT_SIZES, RADIUS, SPACING } from '../src/constants/theme';
+import {
+  COLORS,
+  FONTS,
+  FONT_SIZES,
+  SPACING,
+  BORDERS,
+} from '../src/constants/theme';
 import { GameSettings, Difficulty, GameMode } from '../src/types/game';
 import { useGameState } from '../src/hooks/useGameState';
 import { useAI } from '../src/hooks/useAI';
@@ -61,7 +67,6 @@ export default function GameScreen() {
   const isAIThinking = isAIMode && state.currentPlayer === 'O' && state.phase === 'playing';
   const isDisabled = isAIThinking || state.phase !== 'playing';
 
-  // ─── Input handling ────────────────────────────────────────────────
   const handleCellPress = useCallback(
     (index: number) => {
       if (state.phase !== 'playing') return;
@@ -88,7 +93,6 @@ export default function GameScreen() {
     resetGame();
   }, [resetGame]);
 
-  // Keyboard/controller input
   const { focusedCell, inputMode, onTouchInteraction } = useInput({
     onCellSelect: handleCellPress,
     onBack: handleBack,
@@ -97,7 +101,6 @@ export default function GameScreen() {
     disabled: isDisabled,
   });
 
-  // ─── Lifecycle ─────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
       if (modalTimerRef.current) clearTimeout(modalTimerRef.current);
@@ -111,7 +114,6 @@ export default function GameScreen() {
 
   useAI(state, isAIMode, settings.difficulty, handleAIMove);
 
-  // Detect game over
   useEffect(() => {
     if (state.phase !== 'playing' && prevPhaseRef.current === 'playing') {
       if (state.phase === 'won') {
@@ -125,7 +127,7 @@ export default function GameScreen() {
       recordGameResult(settings.mode, settings.difficulty, state.winner).catch(() => {});
 
       if (modalTimerRef.current) clearTimeout(modalTimerRef.current);
-      modalTimerRef.current = setTimeout(() => setShowModal(true), 600);
+      modalTimerRef.current = setTimeout(() => setShowModal(true), 700);
     }
     prevPhaseRef.current = state.phase;
   }, [state.phase, state.winner]);
@@ -141,7 +143,6 @@ export default function GameScreen() {
     router.back();
   };
 
-  // ─── Labels ────────────────────────────────────────────────────────
   const getPlayerLabel = (player: 'X' | 'O') => {
     if (isAIMode) return player === 'X' ? t('game.you') : t('game.ai');
     return player === 'X' ? t('game.playerX') : t('game.playerO');
@@ -153,22 +154,25 @@ export default function GameScreen() {
       return t('game.playerWins', { player: state.winner });
     }
     if (state.phase === 'draw') return t('game.draw');
-    if (isAIThinking) return t('game.aiThinking');
-    if (isAIMode) return t('game.yourTurn');
-    return t('game.playerTurn', { player: state.currentPlayer });
+    if (isAIThinking) return 'The spectre considers…';
+    if (isAIMode) return 'Your stamp awaits';
+    return `Stamp ${state.currentPlayer} to play`;
   };
 
-  // ─── Render ────────────────────────────────────────────────────────
   const { isLandscape, boardSize } = layout;
 
   const header = (
     <View style={styles.header}>
-      <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-        <Text style={styles.backText}>{backArrow} {t('game.back')}</Text>
+      <TouchableOpacity onPress={handleBack} style={styles.backBtn} activeOpacity={0.7}>
+        <Text style={styles.backText}>{backArrow}  Return</Text>
       </TouchableOpacity>
-      <View style={styles.modeBadges}>
-        {settings.ghostMode && <Text style={styles.modeBadge}>👻 {t('game.ghost')}</Text>}
-        {settings.chaosMode && <Text style={styles.modeBadge}>⚡ {t('game.chaos')}</Text>}
+      <View style={styles.headerCenter}>
+        <Text style={styles.headerTitle}>The Ghost Times</Text>
+        <Text style={styles.headerSub}>DUEL IN PROGRESS</Text>
+      </View>
+      <View style={styles.headerBadges}>
+        {settings.ghostMode && <Text style={styles.modeBadge}>❦ Ghost</Text>}
+        {settings.chaosMode && <Text style={styles.modeBadge}>✶ Chaos</Text>}
       </View>
     </View>
   );
@@ -195,7 +199,11 @@ export default function GameScreen() {
   );
 
   const turnIndicator = (
-    <Text style={styles.turnText}>{getTurnText()}</Text>
+    <View style={styles.turnRow}>
+      <Text style={styles.turnDash}>—</Text>
+      <Text style={styles.turnText}>{getTurnText()}</Text>
+      <Text style={styles.turnDash}>—</Text>
+    </View>
   );
 
   const board = (
@@ -223,29 +231,24 @@ export default function GameScreen() {
 
   const controls = (
     <View style={styles.controls}>
-      <TouchableOpacity onPress={handleNewGame} style={styles.controlBtn}>
-        <Text style={styles.controlText}>🔄 {t('game.newGame')}</Text>
+      <TouchableOpacity onPress={handleNewGame} style={styles.controlBtn} activeOpacity={0.7}>
+        <Text style={styles.controlOrnament}>↻</Text>
+        <Text style={styles.controlText}>Begin Anew</Text>
       </TouchableOpacity>
     </View>
   );
 
-  // Input mode hint (shown briefly when keyboard is detected)
   const inputHint = inputMode === 'keyboard' ? (
-    <Text style={styles.inputHint}>⌨️ {t('game.keyboardHint')}</Text>
+    <Text style={styles.inputHint}>⌨︎  Arrow keys to navigate · Enter to stamp · R to reset</Text>
   ) : null;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
       {isLandscape ? (
-        // ─── Landscape: side-by-side ───────────────────────────────
         <View style={styles.landscapeContainer}>
           {header}
           <View style={styles.landscapeBody}>
-            {/* Left: Board */}
-            <View style={styles.landscapeLeft}>
-              {board}
-            </View>
-            {/* Right: Game info */}
+            <View style={styles.landscapeLeft}>{board}</View>
             <View style={styles.landscapeRight}>
               {badges}
               {turnIndicator}
@@ -257,7 +260,6 @@ export default function GameScreen() {
           </View>
         </View>
       ) : (
-        // ─── Portrait: stacked ─────────────────────────────────────
         <View style={styles.container}>
           {header}
           {badges}
@@ -285,18 +287,18 @@ export default function GameScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: 'transparent',
   },
 
-  // ─── Portrait layout ─────────────────────────────────────────────
   container: {
     flex: 1,
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
     paddingBottom: SPACING.md,
+    gap: SPACING.sm,
   },
 
-  // ─── Landscape layout ────────────────────────────────────────────
+  // Landscape
   landscapeContainer: {
     flex: 1,
     paddingHorizontal: SPACING.md,
@@ -315,93 +317,145 @@ const styles = StyleSheet.create({
   },
   landscapeRight: {
     flex: 0.45,
-    minWidth: 200,
+    minWidth: 220,
     justifyContent: 'center',
     paddingVertical: SPACING.sm,
+    gap: SPACING.sm,
   },
   landscapeSpacer: {
     flex: 1,
   },
 
-  // ─── Shared styles ───────────────────────────────────────────────
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.sm,
+    paddingBottom: SPACING.sm,
+    borderBottomWidth: BORDERS.hairline,
+    borderBottomColor: COLORS.rule,
   },
   backBtn: {
-    padding: SPACING.xs,
+    paddingVertical: SPACING.xs,
+    paddingRight: SPACING.sm,
+    minWidth: 80,
   },
   backText: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
+    fontFamily: FONTS.mono,
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textBrass,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
   },
-  modeBadges: {
+  headerCenter: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerTitle: {
+    fontFamily: FONTS.display,
+    fontSize: FONT_SIZES.md + 2,
+    color: COLORS.textPrimary,
+    letterSpacing: -0.3,
+  },
+  headerSub: {
+    fontFamily: FONTS.mono,
+    fontSize: FONT_SIZES.xs - 2,
+    color: COLORS.textSecondary,
+    letterSpacing: 1.6,
+    marginTop: 1,
+  },
+  headerBadges: {
     flexDirection: 'row',
-    gap: SPACING.xs,
+    gap: SPACING.sm,
+    minWidth: 80,
+    justifyContent: 'flex-end',
   },
   modeBadge: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    backgroundColor: COLORS.surfaceElevated,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 3,
-    borderRadius: RADIUS.full,
-    overflow: 'hidden',
+    fontFamily: FONTS.mono,
+    fontSize: FONT_SIZES.xs - 1,
+    color: COLORS.textBrass,
+    letterSpacing: 1.2,
   },
+
+  // Badges row
   badges: {
     flexDirection: 'row',
     gap: SPACING.sm,
-    marginBottom: SPACING.md,
   },
   badgesLandscape: {
     flexDirection: 'column',
-    gap: SPACING.xs,
-    marginBottom: SPACING.sm,
   },
   badgeWrapPortrait: {
     flex: 1,
   },
   badgeWrapLandscape: {
-    // No flex — badge takes natural height in column layout
+    width: '100%',
+  },
+
+  // Turn indicator
+  turnRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.xs,
+  },
+  turnDash: {
+    fontFamily: FONTS.body,
+    fontStyle: 'italic',
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textMuted,
   },
   turnText: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
+    fontFamily: FONTS.body,
+    fontStyle: 'italic',
+    fontSize: FONT_SIZES.md + 1,
+    color: COLORS.textPrimary,
     textAlign: 'center',
-    fontWeight: '600',
-    marginBottom: SPACING.md,
     minHeight: 22,
   },
+
+  // Board
   boardContainer: {
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
   },
+
+  // Ghost queue area
   queueRow: {
-    marginTop: SPACING.md,
-    minHeight: 80,
-  },
-  controls: {
-    flexDirection: 'row',
+    minHeight: 110,
     justifyContent: 'center',
-    marginTop: SPACING.sm,
+  },
+
+  // Controls
+  controls: {
+    alignItems: 'center',
   },
   controlBtn: {
-    padding: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
   },
-  controlText: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
+  controlOrnament: {
+    fontFamily: FONTS.display,
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.textBrass,
   },
+  controlText: {
+    fontFamily: FONTS.display,
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textPrimary,
+    letterSpacing: 0.5,
+  },
+
   inputHint: {
-    fontSize: FONT_SIZES.xs,
+    fontFamily: FONTS.mono,
+    fontSize: FONT_SIZES.xs - 1,
     color: COLORS.textMuted,
     textAlign: 'center',
-    marginTop: SPACING.xs,
+    letterSpacing: 1.2,
   },
 });
